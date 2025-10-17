@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/gclkaze/evamodulerepositoryserver/server"
 )
@@ -13,7 +14,9 @@ func main() {
 	error := TheServer.Initialize()
 	if error != nil {
 		fmt.Println(error)
+		os.Exit(1)
 	} else {
 		TheServer.Run()
+		os.Exit(0)
 	}
 }
