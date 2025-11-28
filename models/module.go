@@ -1,8 +1,6 @@
 package models
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 )
 
@@ -14,10 +12,5 @@ type Module struct {
 	OwnerID     uint        `json:"owner_id"`
 	Owner       ModuleOwner `gorm:"foreignKey:OwnerID"`
 
-	Releases []ModuleRelease `gorm:"foreignKey:ModuleID"`
-}
-
-func (m *Module) BeforeCreate(tx *gorm.DB) (err error) {
-	m.CreatedAt = time.Now()
-	return
+	//Releases []ModuleRelease `gorm:"foreignKey:ModuleID"`
 }

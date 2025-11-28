@@ -8,7 +8,8 @@ import (
 
 type DeveloperAccount struct {
 	gorm.Model
-	DeveloperID uint `json:"developer_id"`
+	//DeveloperID uint `json:"developer_id"`
+	//Developer   Developer `gorm:"foreignKey:Developer"`
 }
 
 func (m *DeveloperAccount) BeforeCreate(tx *gorm.DB) (err error) {

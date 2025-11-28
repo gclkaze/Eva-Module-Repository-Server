@@ -5,6 +5,7 @@ import "gorm.io/gorm"
 
 type ModuleOwner struct {
 	gorm.Model
-	Type    ModuleOwnerType `gorm:"foreignKey:ModuleTypeID"`
+	TypeID  uint            `json:"type_id"`
+	Type    ModuleOwnerType `gorm:"foreignKey:TypeID"`
 	OwnerID uint            `json:"owner_id"`
 }
