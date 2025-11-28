@@ -1,3 +1,4 @@
+// Package controllers contains the controllers of the Repository Server
 package controllers
 
 import (
@@ -8,13 +9,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var albums = []models.Module{
-	{ID: "1", Title: "The Dark Side of the Moon", Artist: "Pink Floyd", Price: 9.99},
-	{ID: "2", Title: "Back in Black", Artist: "AC/DC", Price: 8.99},
+var modules = []models.Module{
+	{Title: "The Dark Side of the Moon", Repr: "Pink Floyd"},
+	{Title: "Back in Black", Repr: "AC/DC"},
 }
 
 func SearchModules(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, albums)
+	c.IndentedJSON(http.StatusOK, modules)
 }
 
 func CreateAlbum(c *gin.Context) {
@@ -22,6 +23,6 @@ func CreateAlbum(c *gin.Context) {
 	if err := c.BindJSON(&newAlbum); err != nil {
 		return
 	}
-	albums = append(albums, newAlbum)
+	modules = append(modules, newAlbum)
 	c.IndentedJSON(http.StatusCreated, newAlbum)
 }

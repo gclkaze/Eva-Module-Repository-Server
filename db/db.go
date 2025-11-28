@@ -41,6 +41,15 @@ func (db *EvaModuleRepositoryDatabase) Initialize(p *properties.Properties) erro
 	}
 
 	// Auto migrate your models
-	db.db.AutoMigrate(&models.Module{})
+	db.db.AutoMigrate(&models.Module{},
+		&models.ModuleOwner{},
+		&models.ModuleOwnerType{},
+		&models.ModuleRelease{},
+		&models.ModuleReleaseStatus{},
+		&models.ModuleReleaseStatus{},
+		&models.DeveloperModuleOwner{},
+		&models.Developer{},
+		&models.DeveloperAccount{},
+	)
 	return nil
 }
