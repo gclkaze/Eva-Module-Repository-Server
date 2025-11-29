@@ -30,7 +30,7 @@ func (inst *EvaModuleRepositoryServer) Initialize() error {
 	}
 
 	r := gin.Default()
-	error = inst.router.Initialize(r)
+	error = inst.router.Initialize(r, inst.be)
 	if error != nil {
 		return error
 	}

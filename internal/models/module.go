@@ -13,4 +13,6 @@ type Module struct {
 	Owner       ModuleOwner `gorm:"foreignKey:OwnerID"`
 
 	//Releases []ModuleRelease `gorm:"foreignKey:ModuleID"`
+
+	Keywords []Keyword `gorm:"many2many:module_keywords;" json:"keywords,omitempty"`
 }

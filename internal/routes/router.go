@@ -3,8 +3,9 @@ package routes
 import (
 	"fmt"
 
+	"github.com/gclkaze/evamodulerepositoryserver/internal/backend"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/config"
-	"github.com/gclkaze/evamodulerepositoryserver/internal/controllers"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/handlers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,6 +14,8 @@ type EvaModuleRepositoryRouter struct {
 	api  *gin.RouterGroup
 	r    *gin.Engine
 	port string
+
+	moduleHandler *handlers.ModuleHandler
 }
 
 func NewEvaModuleRepositoryRouter() *EvaModuleRepositoryRouter {
@@ -20,11 +23,16 @@ func NewEvaModuleRepositoryRouter() *EvaModuleRepositoryRouter {
 	return inst
 }
 
-func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine) error {
+func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.EvaModuleRepositoryBackend) error {
+
 	router.api = r.Group("/api")
+
+	router.moduleHandler = handlers.NewModuleHandler(be.GetModuleService())
+
+	modules := router.api.Group("/modules")
 	{
-		router.api.GET("/moduleSearch", controllers.SearchModules)
-		//api.POST("/albums", controllers.CreateAlbum)
+		modules.GET("/:id", router.moduleHandler.GetModuleByID) // GET /api/modules/:id
+		modules.GET("/search", router.moduleHandler.SearchModulesByTags)
 	}
 
 	if config.TheConfigReader.IsOnError() {

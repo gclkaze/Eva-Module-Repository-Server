@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/repositories"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/logger"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/runtime"
 	"github.com/magiconair/properties"
@@ -19,6 +20,8 @@ type EvaModuleRepositoryDatabase struct {
 	logger logger.ILogger
 	c      *EvaModuleRepositoryDatabaseConfig
 	db     *gorm.DB
+
+	moduleRepo repositories.ModuleRepository
 }
 
 func NewEvaModuleRepositoryDatabase() *EvaModuleRepositoryDatabase {
@@ -31,7 +34,6 @@ func (db EvaModuleRepositoryDatabase) getConfig(p *properties.Properties) *gorm.
 	if !sqlDebug {
 		return &gorm.Config{}
 	}
-
 	newLogger := glogger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // Writer
 		glogger.Config{
@@ -75,6 +77,18 @@ func (db *EvaModuleRepositoryDatabase) Initialize(p *properties.Properties) erro
 		&models.Module{},
 		&models.ModuleRelease{},
 		&models.DeveloperModuleOwner{},
+		&models.Keyword{},
 	)
+
+	db.initializeRepositories()
 	return nil
+}
+
+func (db *EvaModuleRepositoryDatabase) initializeRepositories() error {
+	db.moduleRepo = repositories.NewModuleRepository(db.db)
+	return nil
+}
+
+func (db EvaModuleRepositoryDatabase) GetModuleRepository() repositories.ModuleRepository {
+	return db.moduleRepo
 }
