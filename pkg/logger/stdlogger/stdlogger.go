@@ -3,7 +3,7 @@ package stdlog
 import (
 	"fmt"
 
-	"github.com/gclkaze/evamodulerepositoryserver/logger"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/logger"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -1,8 +1,8 @@
 package runtime
 
 import (
-	"github.com/gclkaze/evamodulerepositoryserver/logger"
-	stdlog "github.com/gclkaze/evamodulerepositoryserver/logger/stdlogger"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/logger"
+	stdlog "github.com/gclkaze/evamodulerepositoryserver/pkg/logger/stdlogger"
 	"github.com/magiconair/properties"
 )
 

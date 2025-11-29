@@ -3,9 +3,9 @@ package backend
 import (
 	"fmt"
 
-	"github.com/gclkaze/evamodulerepositoryserver/config"
-	"github.com/gclkaze/evamodulerepositoryserver/db"
-	"github.com/gclkaze/evamodulerepositoryserver/logger"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/config"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/db"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/logger"
 	"github.com/magiconair/properties"
 )
 

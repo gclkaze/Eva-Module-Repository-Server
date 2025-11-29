@@ -3,9 +3,9 @@ package server
 import (
 	"fmt"
 
-	"github.com/gclkaze/evamodulerepositoryserver/backend"
-	"github.com/gclkaze/evamodulerepositoryserver/config"
-	"github.com/gclkaze/evamodulerepositoryserver/routes"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/backend"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/config"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/routes"
 	"github.com/gin-gonic/gin"
 )
 

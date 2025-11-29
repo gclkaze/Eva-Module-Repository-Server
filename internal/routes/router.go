@@ -3,8 +3,8 @@ package routes
 import (
 	"fmt"
 
-	"github.com/gclkaze/evamodulerepositoryserver/config"
-	"github.com/gclkaze/evamodulerepositoryserver/controllers"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/config"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/controllers"
 
 	"github.com/gin-gonic/gin"
 )

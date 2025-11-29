@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/gclkaze/evamodulerepositoryserver/logger"
-	"github.com/gclkaze/evamodulerepositoryserver/models"
-	"github.com/gclkaze/evamodulerepositoryserver/runtime"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/logger"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/runtime"
 	"github.com/magiconair/properties"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

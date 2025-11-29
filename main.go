@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gclkaze/evamodulerepositoryserver/server"
+	"github.com/gclkaze/evamodulerepositoryserver/cmd/server"
 )
 
 var TheServer *server.EvaModuleRepositoryServer

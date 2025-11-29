@@ -4,7 +4,7 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/gclkaze/evamodulerepositoryserver/models"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 
 	"github.com/gin-gonic/gin"
 )

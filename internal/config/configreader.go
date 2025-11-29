@@ -28,7 +28,7 @@ func Init() {
 
 func (c *ConfigReader) readProperties() error {
 	currentPath, _ := os.Getwd()
-	c.properties = properties.MustLoadFile(currentPath+"\\config\\application.properties", properties.UTF8)
+	c.properties = properties.MustLoadFile(currentPath+"\\internal\\config\\application.properties", properties.UTF8)
 	if c.properties == nil {
 		return fmt.Errorf("couldn't read application properties file")
 	}
