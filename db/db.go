@@ -2,6 +2,9 @@ package db
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"time"
 
 	"github.com/gclkaze/evamodulerepositoryserver/logger"
 	"github.com/gclkaze/evamodulerepositoryserver/models"
@@ -9,6 +12,7 @@ import (
 	"github.com/magiconair/properties"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	glogger "gorm.io/gorm/logger"
 )
 
 type EvaModuleRepositoryDatabase struct {
@@ -20,6 +24,26 @@ type EvaModuleRepositoryDatabase struct {
 func NewEvaModuleRepositoryDatabase() *EvaModuleRepositoryDatabase {
 	inst := &EvaModuleRepositoryDatabase{}
 	return inst
+}
+
+func (db EvaModuleRepositoryDatabase) getConfig(p *properties.Properties) *gorm.Config {
+	sqlDebug := p.GetBool("sql_debug", false)
+	if !sqlDebug {
+		return &gorm.Config{}
+	}
+
+	newLogger := glogger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // Writer
+		glogger.Config{
+			SlowThreshold: time.Second,  // Log queries slower than this
+			LogLevel:      glogger.Info, // Log level: Silent, Error, Warn, Info
+			Colorful:      true,         // Enable color
+		},
+	)
+	return &gorm.Config{
+		Logger: newLogger,
+	}
+
 }
 
 func (db *EvaModuleRepositoryDatabase) Initialize(p *properties.Properties) error {
@@ -35,7 +59,8 @@ func (db *EvaModuleRepositoryDatabase) Initialize(p *properties.Properties) erro
 		return error
 	}
 	connectionString := db.c.GetConnectionString()
-	db.db, error = gorm.Open(mysql.Open(connectionString), &gorm.Config{})
+
+	db.db, error = gorm.Open(mysql.Open(connectionString), db.getConfig(p))
 	if error != nil {
 		return fmt.Errorf("failed to connect to database: ", error)
 	}
@@ -48,8 +73,8 @@ func (db *EvaModuleRepositoryDatabase) Initialize(p *properties.Properties) erro
 		&models.DeveloperAccount{},
 		&models.Developer{},
 		&models.Module{},
-	//&models.ModuleRelease{},
-	//&models.DeveloperModuleOwner{},
+		&models.ModuleRelease{},
+		&models.DeveloperModuleOwner{},
 	)
 	return nil
 }
