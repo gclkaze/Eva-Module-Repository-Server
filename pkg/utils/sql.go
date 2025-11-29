@@ -15,6 +15,8 @@ func BuildWhereConditionStringForUniqueAttrsContaining(attr string, tags []strin
 	var conditions []string
 	for s := range unique {
 		conditions = append(conditions, fmt.Sprintf("%s LIKE '%%%s%%'", attr, s))
+		conditions = append(conditions, fmt.Sprintf("%s LIKE '%s%%'", attr, s))
+		conditions = append(conditions, fmt.Sprintf("%s LIKE '%%%s'", attr, s))
 	}
 
 	whereClause := strings.Join(conditions, " OR ")

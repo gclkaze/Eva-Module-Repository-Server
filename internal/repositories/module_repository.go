@@ -3,8 +3,8 @@ package repositories
 
 import (
 	"errors"
+	"fmt"
 
-	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"gorm.io/gorm"
@@ -13,7 +13,7 @@ import (
 type ModuleRepository interface {
 	Create(dev *models.Module) error
 	FindByID(id uint) (*models.Module, error)
-	SearchByKeywords(tags []string) ([]dto.ModuleDTO, error)
+	SearchByKeywords(tags []string) ([]models.Module, error)
 }
 
 type moduleRepository struct {
@@ -41,23 +41,38 @@ func (r moduleRepository) FindByID(id uint) (*models.Module, error) {
 	return &m, nil
 }
 
-func (r moduleRepository) SearchByKeywords(tags []string) ([]dto.ModuleDTO, error) {
-	var m []dto.ModuleDTO
+func (r moduleRepository) SearchByKeywords(tags []string) ([]models.Module, error) {
 	var results []models.Module
 
 	whereTitleClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("title", tags)
-	whereReprClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("rep", tags)
+	whereReprClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("repr", tags)
 	whereDescriptionClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("description", tags)
 
 	r.db.
 		Where(whereTitleClause + " OR " + whereReprClause + " OR " + whereDescriptionClause).
 		Find(&results)
 
-	whereKeywordsClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("label", tags)
+	whereKeywordsClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("keywords.label", tags)
 
 	var taggedResults []models.Module
-	q := "SELECT * FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE %s"
-	r.db.Raw(q, whereKeywordsClause).Scan(&taggedResults)
 
-	return m, nil
+	if results != nil {
+		if len(results) != 0 {
+			var ids []uint
+			for i := 0; i < len(results); i++ {
+				ids = append(ids, results[i].ID)
+			}
+
+			q := fmt.Sprintf("SELECT * FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND modules.id NOT IN ? ", whereKeywordsClause)
+			r.db.Raw(q, ids).Scan(&taggedResults)
+
+		} else {
+			q := fmt.Sprintf("SELECT * FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s )", whereKeywordsClause)
+			r.db.Raw(q).Scan(&taggedResults)
+
+		}
+	}
+
+	results = append(results, taggedResults...)
+	return results, nil
 }

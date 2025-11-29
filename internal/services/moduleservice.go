@@ -16,5 +16,12 @@ func NewModuleService(repo repositories.ModuleRepository) *ModuleService {
 
 func (s *ModuleService) SearchByKeywords(tags []string) ([]dto.ModuleDTO, error) {
 	results, error := s.repo.SearchByKeywords(tags)
-	return results, error
+	if error != nil {
+		return nil, error
+	}
+	var dtos []dto.ModuleDTO
+	for i := 0; i < len(results); i++ {
+		dtos = append(dtos, *dto.NewModuleDTO(results[i]))
+	}
+	return dtos, error
 }
