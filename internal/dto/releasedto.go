@@ -8,7 +8,7 @@ import (
 
 type ReleaseDTO struct {
 	ID          uint      `json:"id" binding:"required"`
-	Version     string    `json:"title" binding:"required"`
+	Version     string    `json:"version" binding:"required"`
 	ReleasedAt  time.Time `json:"released_at" binding:"required"`
 	Description string    `json:"description" binding:"required"`
 	DiskSize    uint      `json:"diskSize" binding:"required"`

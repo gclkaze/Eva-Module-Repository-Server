@@ -6,6 +6,6 @@ import (
 
 type ModuleReleaseStatus struct {
 	gorm.Model
-	Label      string `json:"label"` // e.g., "draft", "published", "deprecated"
-	Desription string `json:"description"`
+	Label       string `json:"label"` // e.g., "draft", "published", "deprecated"
+	Description string `json:"description"`
 }

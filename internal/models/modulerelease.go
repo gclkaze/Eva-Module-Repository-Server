@@ -9,7 +9,7 @@ import (
 type ModuleRelease struct {
 	gorm.Model
 	ModuleID    uint                `json:"module_id"`
-	Version     string              `json:"version"`
+	Version     string              `gorm:"unique;not null" json:"version"`
 	Description string              `json:"description"`
 	ReleasedAt  time.Time           `json:"released_at"`
 	StatusID    uint                `json:"status_id"`
