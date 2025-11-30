@@ -15,7 +15,8 @@ type EvaModuleRepositoryRouter struct {
 	r    *gin.Engine
 	port string
 
-	moduleHandler *handlers.ModuleHandler
+	moduleHandler  *handlers.ModuleHandler
+	releaseHandler *handlers.ReleaseHandler
 }
 
 func NewEvaModuleRepositoryRouter() *EvaModuleRepositoryRouter {
@@ -29,11 +30,20 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 
 	router.moduleHandler = handlers.NewModuleHandler(be.GetModuleService())
 
+	router.releaseHandler = handlers.NewReleaseHandler(be.GetReleaseService())
+
 	modules := router.api.Group("/modules")
 	{
-		modules.GET("/:id", router.moduleHandler.GetModuleByID) // GET /api/modules/:id
+		modules.GET("/:id", router.moduleHandler.FindByID) // GET /api/modules/:id
 		modules.GET("/search", router.moduleHandler.SearchModulesByTags)
 	}
+
+	releases := router.api.Group("releases")
+	{
+		releases.GET("/:id/releases", router.releaseHandler.GetModuleReleases)          // GET /api/releases/:id
+		releases.GET("/:id/release/:releaseId", router.releaseHandler.GetModuleRelease) // GET /api/releases/:id/release/:releaseId
+	}
+	// /api/releases/:id/
 
 	if config.TheConfigReader.IsOnError() {
 		return fmt.Errorf("couldn't read the properties file")

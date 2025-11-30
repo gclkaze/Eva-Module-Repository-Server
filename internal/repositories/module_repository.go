@@ -53,7 +53,7 @@ func (r moduleRepository) SearchByKeywords(tags []string) ([]models.Module, erro
 		Find(&results)
 
 	whereKeywordsClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("keywords.label", tags)
-
+	selection := "modules.id, modules.repr, modules.title, modules.description "
 	var taggedResults []models.Module
 
 	if results != nil {
@@ -63,13 +63,12 @@ func (r moduleRepository) SearchByKeywords(tags []string) ([]models.Module, erro
 				ids = append(ids, results[i].ID)
 			}
 
-			q := fmt.Sprintf("SELECT * FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND modules.id NOT IN ? ", whereKeywordsClause)
+			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND modules.id NOT IN ? ", selection, whereKeywordsClause)
 			r.db.Raw(q, ids).Scan(&taggedResults)
 
 		} else {
-			q := fmt.Sprintf("SELECT * FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s )", whereKeywordsClause)
+			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s )", selection, whereKeywordsClause)
 			r.db.Raw(q).Scan(&taggedResults)
-
 		}
 	}
 
