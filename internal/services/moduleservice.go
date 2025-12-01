@@ -4,12 +4,10 @@ package services
 import (
 	"fmt"
 	"mime/multipart"
-	"net/http"
 	"path/filepath"
 	"strings"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
-	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/repositories"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/logger"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/runtime"
@@ -55,7 +53,7 @@ func NewModuleService(repo repositories.ModuleRepository, dev *DeveloperService,
 	return mod, nil
 }
 
-func (s *ModuleService) Create(userID uint, title string, descr string, repr string, file *multipart.FileHeader, tags string, c *gin.Context) (uint, error) {
+func (s *ModuleService) CreateModule(userID uint, title string, descr string, repr string, file *multipart.FileHeader, tags string, c *gin.Context) (uint, error) {
 	if file == nil {
 		return 0, fmt.Errorf("no module file was provided")
 	}
@@ -74,20 +72,24 @@ func (s *ModuleService) Create(userID uint, title string, descr string, repr str
 	}
 
 	dev, err := s.developerService.FindById(userID)
+	fmt.Print(dev)
 	if err != nil {
-		return 0, err
-	}
-	//the module needs to get first an id then save it under the path of the user + id
-	mod := models.NewModule(title, repr, descr, ownerID, owner, keywords)
-	err := s.repo.Create(mod)
-	if err != nil {
-		return 0, err
-	}
-	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
 		return 0, err
 	}
 
+	//the module needs to get first an id then save it under the path of the user + id
+
+	//(title string, repr string, description string, ownerID uint, owner ModuleOwner, keywords []Keyword
+	/*	mod := models.NewModule(title, repr, descr, ownerID, owner, keywords)
+		err := s.repo.Create(mod)
+		if err != nil {
+			return 0, err
+		}
+		if err := c.SaveUploadedFile(file, uploadPath); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+			return 0, err
+		}
+	*/
 	return 0, nil
 }
 

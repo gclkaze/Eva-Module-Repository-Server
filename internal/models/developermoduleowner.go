@@ -2,14 +2,6 @@ package models
 
 import "gorm.io/gorm"
 
-/*type DeveloperModuleOwner struct {
-	gorm.Model
-	OwnerID     uint        `json:"owner_id"`
-	Owner       ModuleOwner `gorm:"foreignKey:OwnerID"`
-	DeveloperID uint        `json:"developer_id"`
-	Developer   Developer   `gorm:"foreignKey:DeveloperID"`
-}*/
-
 type DeveloperModuleOwner struct {
 	gorm.Model
 
@@ -18,6 +10,8 @@ type DeveloperModuleOwner struct {
 
 	Developer   Developer   `json:"developer"`
 	ModuleOwner ModuleOwner `json:"module_owner"`
+}
 
-	/*	Role string `json:"role"`*/
+func NewDeveloperModuleOwner(d Developer, m ModuleOwner) *DeveloperModuleOwner {
+	return &DeveloperModuleOwner{DeveloperID: d.ID, ModuleOwnerID: m.ID, Developer: d, ModuleOwner: m}
 }

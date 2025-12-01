@@ -15,9 +15,10 @@ type EvaModuleRepositoryBackend struct {
 	properties *properties.Properties
 	logger     logger.ILogger
 
-	moduleService    *services.ModuleService
-	releaseService   *services.ReleaseService
-	developerService *services.DeveloperService
+	moduleService          *services.ModuleService
+	releaseService         *services.ReleaseService
+	developerService       *services.DeveloperService
+	moduleOwnershipService *services.ModuleOwnershipService
 }
 
 func NewEvaModuleRepositoryBackend() *EvaModuleRepositoryBackend {
@@ -50,6 +51,7 @@ func (be *EvaModuleRepositoryBackend) initializeServices() error {
 		return err
 	}
 	be.moduleService = inst
+	//be.moduleOwnershipService = services.NewModuleOwnershipService(be.db.)
 	return nil
 }
 
@@ -63,6 +65,10 @@ func (be *EvaModuleRepositoryBackend) GetReleaseService() *services.ReleaseServi
 
 func (be *EvaModuleRepositoryBackend) GetDeveloperService() *services.DeveloperService {
 	return be.developerService
+}
+
+func (be *EvaModuleRepositoryBackend) GetModuleOwnershipService() *services.ModuleOwnershipService {
+	return be.moduleOwnershipService
 }
 
 /*
