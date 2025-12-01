@@ -14,6 +14,7 @@ type ModuleRepository interface {
 	Create(dev *models.Module) error
 	FindByID(id uint) (*models.Module, error)
 	SearchByKeywords(tags []string) ([]models.Module, error)
+	Delete(id uint) (bool, error)
 }
 
 type moduleRepository struct {
@@ -39,6 +40,21 @@ func (r moduleRepository) FindByID(id uint) (*models.Module, error) {
 	}
 
 	return &m, nil
+}
+
+func (r moduleRepository) Delete(id uint) (bool, error) {
+	var m models.Module
+	res := r.db.Where(id).Delete(&m)
+
+	if res.Error != nil {
+		return false, res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (r moduleRepository) SearchByKeywords(tags []string) ([]models.Module, error) {

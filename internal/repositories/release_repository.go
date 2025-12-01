@@ -13,6 +13,7 @@ import (
 type ReleaseRepository interface {
 	Create(dev *models.ModuleRelease) error
 	FindByID(id uint) (*models.ModuleRelease, error)
+	DeleteModuleRelease(id uint, releaseID uint) (bool, error)
 	GetModuleRelease(id uint, releaseID uint) (*models.ModuleRelease, error)
 	GetModuleReleases(id uint) ([]models.ModuleRelease, error)
 	SearchModuleReleasesByTags(id uint, tags []string) ([]models.ModuleRelease, error)
@@ -54,6 +55,20 @@ func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, e
 	}
 
 	return results, nil
+}
+
+func (r releaseRepository) DeleteModuleRelease(id uint, releaseID uint) (bool, error) {
+	var result models.ModuleRelease
+	res := r.db.Where("module_id = ? AND id = ?", id, releaseID).Delete(&result)
+
+	if res.Error != nil {
+		return false, res.Error
+	}
+	if res.RowsAffected == 0 {
+		return false, nil
+	}
+
+	return true, nil
 }
 
 func (r releaseRepository) GetModuleRelease(id uint, releaseID uint) (*models.ModuleRelease, error) {

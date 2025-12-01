@@ -6,11 +6,16 @@ import (
 )
 
 type ReleaseService struct {
-	repo repositories.ReleaseRepository
+	repo       repositories.ReleaseRepository
+	statusRepo repositories.ReleaseStatusRepository
 }
 
-func NewReleaseService(repo repositories.ReleaseRepository) *ReleaseService {
-	return &ReleaseService{repo: repo}
+func NewReleaseService(repo repositories.ReleaseRepository, statusRepo repositories.ReleaseStatusRepository) *ReleaseService {
+	return &ReleaseService{repo: repo, statusRepo: statusRepo}
+}
+
+func (s *ReleaseService) DeleteModuleRelease(id uint, releaseID uint) (bool, error) {
+	return s.repo.DeleteModuleRelease(id, releaseID)
 }
 
 func (s *ReleaseService) GetModuleRelease(id uint, releaseID uint) (*dto.ReleaseDTO, error) {
@@ -53,4 +58,8 @@ func (s *ReleaseService) SearchByKeywords(id uint, tags []string) ([]dto.Release
 		dtos = append(dtos, *dto.NewReleaseDTO(results[i]))
 	}
 	return dtos, error
+}
+
+func (s *ReleaseService) Initialize() {
+	s.statusRepo.Initialize()
 }

@@ -26,6 +26,10 @@ func (s *ModuleService) FindByID(id uint) (*dto.ModuleDTO, error) {
 	return res, error
 }
 
+func (s *ModuleService) Delete(id uint) (bool, error) {
+	return s.repo.Delete(id)
+}
+
 func (s *ModuleService) SearchByKeywords(tags []string) ([]dto.ModuleDTO, error) {
 	results, error := s.repo.SearchByKeywords(tags)
 	if error != nil {

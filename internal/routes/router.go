@@ -36,6 +36,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 	{
 		modules.GET("/:id", router.moduleHandler.FindByID) // GET /api/modules/:id
 		modules.GET("/search", router.moduleHandler.SearchModulesByTags)
+		modules.GET("/:id/delete", router.moduleHandler.Delete)
 	}
 
 	releases := router.api.Group("releases")
@@ -43,6 +44,8 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 		releases.GET("/:id/releases", router.releaseHandler.GetModuleReleases)          // GET /api/releases/:id
 		releases.GET("/:id/release/:releaseId", router.releaseHandler.GetModuleRelease) // GET /api/releases/:id/release/:releaseId
 		releases.GET("/:id/search", router.releaseHandler.SearchByKeywords)
+		releases.GET("/:id/delete/:releaseId", router.releaseHandler.DeleteModuleRelease) // GET /api/releases/:id/delete/:releaseId
+
 	}
 	// /api/releases/:id/
 

@@ -42,7 +42,7 @@ func (be *EvaModuleRepositoryBackend) Initialize() error {
 
 func (be *EvaModuleRepositoryBackend) initializeServices() error {
 	be.moduleService = services.NewModuleService(be.db.GetModuleRepository())
-	be.releaseService = services.NewReleaseService(be.db.GetReleaseRepository())
+	be.releaseService = services.NewReleaseService(be.db.GetReleaseRepository(), be.db.GetReleaseStatusRepository())
 	return nil
 }
 
@@ -53,3 +53,14 @@ func (be *EvaModuleRepositoryBackend) GetModuleService() *services.ModuleService
 func (be *EvaModuleRepositoryBackend) GetReleaseService() *services.ReleaseService {
 	return be.releaseService
 }
+
+/*
+
+type ModuleReleaseStatus struct {
+    ID   uint   `gorm:"primaryKey"`
+    Name string `gorm:"unique;not null"`
+}
+
+
+
+*/
