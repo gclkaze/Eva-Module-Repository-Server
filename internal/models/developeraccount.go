@@ -9,3 +9,7 @@ type DeveloperAccount struct {
 	//DeveloperID uint `json:"developer_id"`
 	//Developer   Developer `gorm:"foreignKey:Developer"`
 }
+
+func NewDeveloperAccount() *DeveloperAccount {
+	return &DeveloperAccount{}
+}

@@ -49,7 +49,6 @@ func (h *ModuleHandler) Delete(c *gin.Context) {
 			/*			"details": err.Error(),*/
 		})
 		return
-
 	}
 	res, err := h.service.Delete(idUint)
 	if err != nil {
@@ -58,6 +57,70 @@ func (h *ModuleHandler) Delete(c *gin.Context) {
 	}
 
 	c.JSON(200, res)
+}
+
+func (h *ModuleHandler) Upload(c *gin.Context) {
+	// Parse form fields
+	userID := c.PostForm("userId")
+	title := c.PostForm("title")
+	repr := c.PostForm("repr")
+	tags := c.PostForm("tags")
+	description := c.PostForm("description")
+
+	idUint, err := utils.StringToUint(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid User ID format",
+			/*			"details": err.Error(),*/
+		})
+		return
+	}
+
+	// Validate required fields
+	if title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Title is required"})
+		return
+	}
+
+	// Handle file upload
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File upload failed"})
+		return
+	}
+
+	// Call service to create module
+	id, err := h.service.Create(idUint, title, description, repr, file, tags, c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Save file to disk (example: ./uploads/)
+	/*    uploadPath := fmt.Sprintf("./uploads/%s", file.Filename)
+	      if err := c.SaveUploadedFile(file, uploadPath); err != nil {
+	          c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+	          return
+	      }
+
+	      // Create record in DB
+	      module := Module{
+	          Title:       title,
+	          Repr:        repr,
+	          Description: description,
+	          FilePath:    uploadPath,
+	      }
+
+	      if err := db.Create(&module).Error; err != nil {
+	          c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	          return
+	      }
+	*/
+	// Respond with created resource
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Module created successfully",
+		"module":  id,
+	})
 }
 
 func (h *ModuleHandler) SearchModulesByTags(c *gin.Context) {

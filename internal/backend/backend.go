@@ -15,8 +15,9 @@ type EvaModuleRepositoryBackend struct {
 	properties *properties.Properties
 	logger     logger.ILogger
 
-	moduleService  *services.ModuleService
-	releaseService *services.ReleaseService
+	moduleService    *services.ModuleService
+	releaseService   *services.ReleaseService
+	developerService *services.DeveloperService
 }
 
 func NewEvaModuleRepositoryBackend() *EvaModuleRepositoryBackend {
@@ -25,7 +26,6 @@ func NewEvaModuleRepositoryBackend() *EvaModuleRepositoryBackend {
 }
 
 func (be *EvaModuleRepositoryBackend) Initialize() error {
-
 	if config.TheConfigReader.IsOnError() {
 		return fmt.Errorf("couldn't read the properties file")
 	}
@@ -41,8 +41,15 @@ func (be *EvaModuleRepositoryBackend) Initialize() error {
 }
 
 func (be *EvaModuleRepositoryBackend) initializeServices() error {
-	be.moduleService = services.NewModuleService(be.db.GetModuleRepository())
 	be.releaseService = services.NewReleaseService(be.db.GetReleaseRepository(), be.db.GetReleaseStatusRepository())
+
+	be.developerService = services.NewDeveloperService(be.db.GetDeveloperRepository(), be.db.GetDeveloperAccountRepository(), be.properties)
+
+	inst, err := services.NewModuleService(be.db.GetModuleRepository(), be.developerService, be.properties)
+	if err != nil {
+		return err
+	}
+	be.moduleService = inst
 	return nil
 }
 
@@ -52,6 +59,10 @@ func (be *EvaModuleRepositoryBackend) GetModuleService() *services.ModuleService
 
 func (be *EvaModuleRepositoryBackend) GetReleaseService() *services.ReleaseService {
 	return be.releaseService
+}
+
+func (be *EvaModuleRepositoryBackend) GetDeveloperService() *services.DeveloperService {
+	return be.developerService
 }
 
 /*

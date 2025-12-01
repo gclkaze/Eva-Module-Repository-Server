@@ -21,9 +21,11 @@ type EvaModuleRepositoryDatabase struct {
 	c      *EvaModuleRepositoryDatabaseConfig
 	db     *gorm.DB
 
-	moduleRepo        repositories.ModuleRepository
-	releaseRepo       repositories.ReleaseRepository
-	releaseStatusRepo repositories.ReleaseStatusRepository
+	moduleRepo           repositories.ModuleRepository
+	releaseRepo          repositories.ReleaseRepository
+	releaseStatusRepo    repositories.ReleaseStatusRepository
+	developerRepo        repositories.DeveloperRepository
+	developerAccountRepo repositories.DeveloperAccountRepository
 }
 
 func NewEvaModuleRepositoryDatabase() *EvaModuleRepositoryDatabase {
@@ -109,4 +111,12 @@ func (db EvaModuleRepositoryDatabase) GetReleaseRepository() repositories.Releas
 
 func (db EvaModuleRepositoryDatabase) GetReleaseStatusRepository() repositories.ReleaseStatusRepository {
 	return db.releaseStatusRepo
+}
+
+func (db EvaModuleRepositoryDatabase) GetDeveloperRepository() repositories.DeveloperRepository {
+	return db.developerRepo
+}
+
+func (db EvaModuleRepositoryDatabase) GetDeveloperAccountRepository() repositories.DeveloperAccountRepository {
+	return db.developerAccountRepo
 }

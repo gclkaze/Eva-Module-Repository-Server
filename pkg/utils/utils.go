@@ -15,3 +15,7 @@ func StringToUint(str string) (uint, error) {
 	u := uint(num)
 	return u, err
 }
+
+func UintToString(i uint) string {
+	return strconv.FormatUint(uint64(i), 10)
+}
