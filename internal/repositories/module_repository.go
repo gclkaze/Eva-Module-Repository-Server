@@ -64,7 +64,16 @@ func (r moduleRepository) Delete(id uint) (bool, error) {
 }
 
 func (r *moduleRepository) Update(mod *models.Module) error {
-	return r.db.Save(mod).Error
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(mod).Error; err != nil {
+			return err
+		}
+		if err := tx.Model(mod).Association("Keywords").Replace(mod.Keywords); err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
 }
 
 func (r moduleRepository) SearchByKeywords(tags []string) ([]models.Module, error) {
