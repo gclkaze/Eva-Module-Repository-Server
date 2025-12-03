@@ -30,9 +30,10 @@ type ModuleService struct {
 
 	developerService *DeveloperService
 	ownershipService *ModuleOwnershipService
+	releaseService   *ReleaseService
 }
 
-func NewModuleService(repo repositories.ModuleRepository, dev *DeveloperService, p *properties.Properties, ownershipService *ModuleOwnershipService, keywordRepo repositories.KeywordRepository) (*ModuleService, error) {
+func NewModuleService(repo repositories.ModuleRepository, dev *DeveloperService, p *properties.Properties, ownershipService *ModuleOwnershipService, keywordRepo repositories.KeywordRepository, releaseService *ReleaseService) (*ModuleService, error) {
 	moduleFolder := p.GetString("module_folder", "")
 	releaseFolder := p.GetString("release_folder", "")
 	devFolder := p.GetString("dev_folder", "")
@@ -60,6 +61,7 @@ func NewModuleService(repo repositories.ModuleRepository, dev *DeveloperService,
 
 	mod.logger = l
 	mod.ownershipService = ownershipService
+	mod.releaseService = releaseService
 	return mod, nil
 }
 
@@ -148,11 +150,9 @@ func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, 
 	}
 
 	if mod.Owner.Type.Label != models.Dev.String() {
-		fmt.Print(models.ModuleOwnerTypeDef(mod.Owner.Type.ID))
-		fmt.Print(models.Dev)
-
 		return 0, fmt.Errorf("user with ID %d didn't match with the module type", userID)
 	}
+
 	labels := strings.Split(tags, ",")
 	keywords, err := s.CreateAndGetKeywords(labels)
 	if err != nil {
@@ -184,6 +184,58 @@ func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, 
 		return 0, err
 	}
 
+	return mod.ID, nil
+}
+
+func (s ModuleService) moduleHasPendingRelease(modID uint) (bool, error) {
+	return false, nil
+}
+
+func (s ModuleService) userHasPendingRelease() (bool, error) {
+	return false, nil
+}
+
+func (s *ModuleService) SuggestUserModuleRelease(userID uint, modID uint, version string) (uint, error) {
+	mod, err := s.GetModule(modID)
+	if err != nil {
+		return 0, err
+	}
+
+	if mod.Owner.EntityID != userID {
+		return 0, fmt.Errorf("user with ID %d didn't match with the module", userID)
+	}
+
+	if mod.Owner.Type.Label != models.Dev.String() {
+		return 0, fmt.Errorf("user with ID %d didn't match with the module type", userID)
+	}
+
+	s.releaseService.SuggestUserModuleRelease(userID, mod, version)
+
+	/*	mod.Update(title, repr, descr, keywords)
+		err = s.repo.Update(mod)
+
+		if err != nil {
+			return 0, err
+		}
+
+		dmo, err := s.ownershipService.FindDeveloperModuleOwner(&mod.Owner)
+		if err != nil {
+			return 0, err
+		}
+		modPath := s.GetModulePath(dmo, mod)
+		if !utils.FolderExists(modPath) {
+			utils.CreateFolder(modPath)
+		} else {
+			utils.CleanFolder(modPath)
+		}*/
+
+	/*	modPath = fmt.Sprintf("%s/%s", modPath, file.Filename)
+		if err := c.SaveUploadedFile(file, modPath); err != nil {
+			s.logger.Errorf("module_service", "%s", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
+			return 0, err
+		}
+	*/
 	return mod.ID, nil
 }
 

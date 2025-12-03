@@ -42,12 +42,12 @@ func (be *EvaModuleRepositoryBackend) Initialize() error {
 }
 
 func (be *EvaModuleRepositoryBackend) initializeServices() error {
-	be.releaseService = services.NewReleaseService(be.db.GetReleaseRepository(), be.db.GetReleaseStatusRepository())
+	be.moduleOwnershipService = services.NewModuleOwnershipService(be.db.GetModuleOwnerRepository(), be.db.GetModuleOwnerTypeRepository(), be.db.GetDeveloperModuleOwnerRepository())
+	be.releaseService = services.NewReleaseService(be.db.GetReleaseRepository(), be.db.GetReleaseStatusRepository(), be.moduleOwnershipService)
 
 	be.developerService = services.NewDeveloperService(be.db.GetDeveloperRepository(), be.db.GetDeveloperAccountRepository(), be.properties)
-	be.moduleOwnershipService = services.NewModuleOwnershipService(be.db.GetModuleOwnerRepository(), be.db.GetModuleOwnerTypeRepository(), be.db.GetDeveloperModuleOwnerRepository())
 
-	inst, err := services.NewModuleService(be.db.GetModuleRepository(), be.developerService, be.properties, be.moduleOwnershipService, be.db.GetKeywordRepository())
+	inst, err := services.NewModuleService(be.db.GetModuleRepository(), be.developerService, be.properties, be.moduleOwnershipService, be.db.GetKeywordRepository(), be.releaseService)
 	if err != nil {
 		return err
 	}

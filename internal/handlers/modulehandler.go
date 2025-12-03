@@ -103,7 +103,6 @@ func (h *ModuleHandler) Upload(c *gin.Context) {
 }
 
 func (h *ModuleHandler) Update(c *gin.Context) {
-	// Parse form fields
 	userID := c.PostForm("userId")
 	modID := c.PostForm("modId")
 	title := c.PostForm("title")
@@ -127,27 +126,56 @@ func (h *ModuleHandler) Update(c *gin.Context) {
 		return
 	}
 
-	// Validate required fields
 	if title == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Title is required"})
 		return
 	}
 
-	// Handle file upload
 	file, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "File upload failed"})
 		return
 	}
 
-	// Call service to create module
 	id, err := h.service.UpdateUserModule(idUint, modIDUint, title, description, repr, file, tags, c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Respond with created resource
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Module updated successfully",
+		"module":  id,
+	})
+}
+
+func (h *ModuleHandler) SuggestRelease(c *gin.Context) {
+	userID := c.PostForm("userId")
+	modID := c.PostForm("modId")
+	version := c.PostForm("version")
+
+	idUint, err := utils.StringToUint(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid User ID format",
+		})
+		return
+	}
+
+	modIDUint, err := utils.StringToUint(modID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid Module ID format",
+		})
+		return
+	}
+
+	id, err := h.service.SuggestUserModuleRelease(idUint, modIDUint, version)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Module updated successfully",
 		"module":  id,

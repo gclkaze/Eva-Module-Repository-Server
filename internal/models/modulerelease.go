@@ -17,3 +17,7 @@ type ModuleRelease struct {
 	Keywords    []Keyword           `gorm:"many2many:release_keywords;" json:"keywords,omitempty"`
 	DiskSize    uint                `json:"disk_size"`
 }
+
+func NewModuleReleaseFromModule(m *Module, version string, status ModuleReleaseStatus, diskSize uint) *ModuleRelease {
+	return &ModuleRelease{ModuleID: m.ID, Version: version, Description: m.Description, StatusID: status.ID, Status: status, DiskSize: diskSize}
+}

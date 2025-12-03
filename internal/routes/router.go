@@ -40,6 +40,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 		modules.GET("/:id/delete", router.moduleHandler.Delete)
 		modules.POST("/upload", router.moduleHandler.Upload)
 		modules.POST("/update", router.moduleHandler.Update)
+		modules.POST("/suggest", router.moduleHandler.SuggestRelease)
 	}
 
 	releases := router.api.Group("releases")
@@ -48,9 +49,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 		releases.GET("/:id/release/:releaseId", router.releaseHandler.GetModuleRelease) // GET /api/releases/:id/release/:releaseId
 		releases.GET("/:id/search", router.releaseHandler.SearchByKeywords)
 		releases.GET("/:id/delete/:releaseId", router.releaseHandler.DeleteModuleRelease) // GET /api/releases/:id/delete/:releaseId
-
 	}
-	// /api/releases/:id/
 
 	if config.TheConfigReader.IsOnError() {
 		return fmt.Errorf("couldn't read the properties file")
