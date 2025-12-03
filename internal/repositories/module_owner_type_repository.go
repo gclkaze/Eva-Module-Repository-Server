@@ -11,6 +11,7 @@ type ModuleOwnerTypesRepository interface {
 	Create(string) error
 	FindByLabel(string) (*models.ModuleOwnerType, error)
 	FindById(uint) (*models.ModuleOwnerType, error)
+	Initialize() error
 }
 
 type moduleOwnerTypesRepository struct {
@@ -27,7 +28,7 @@ func (m *moduleOwnerTypesRepository) Create(label string) error {
 		return err
 	}
 	if r != nil {
-		return fmt.Errorf("Label %s exists", label)
+		return fmt.Errorf("label %s exists", label)
 	}
 
 	t := models.NewModuleOwnerType(label)
@@ -53,4 +54,17 @@ func (m *moduleOwnerTypesRepository) FindById(id uint) (*models.ModuleOwnerType,
 		return nil, res.Error
 	}
 	return &t, nil
+}
+
+func (r moduleOwnerTypesRepository) Initialize() error {
+	for _, t := range models.GetModuleOwnerTypes() {
+		var count int64
+		r.db.Model(&models.ModuleOwnerType{}).Where("label = ?", t.String()).Count(&count)
+		if count == 0 {
+			if err := r.db.Create(models.NewModuleOwnerType(t.String())).Error; err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

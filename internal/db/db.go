@@ -26,6 +26,10 @@ type EvaModuleRepositoryDatabase struct {
 	releaseStatusRepo    repositories.ReleaseStatusRepository
 	developerRepo        repositories.DeveloperRepository
 	developerAccountRepo repositories.DeveloperAccountRepository
+	moduleOwnerRepo      repositories.ModuleOwnerRepository
+	devModuleOwnerRepo   repositories.DeveloperModuleOwnerRepository
+	moduleOwnerTypeRepo  repositories.ModuleOwnerTypesRepository
+	keywordRepo          repositories.KeywordRepository
 }
 
 func NewEvaModuleRepositoryDatabase() *EvaModuleRepositoryDatabase {
@@ -85,12 +89,16 @@ func (db *EvaModuleRepositoryDatabase) Initialize(p *properties.Properties) erro
 	)
 
 	db.initializeRepositories()
-	db.initializeData()
-	return nil
+	error = db.initializeData()
+	return error
 }
 
 func (db *EvaModuleRepositoryDatabase) initializeData() error {
 	err := db.releaseStatusRepo.Initialize()
+	if err != nil {
+		return err
+	}
+	err = db.moduleOwnerTypeRepo.Initialize()
 	return err
 }
 
@@ -98,6 +106,12 @@ func (db *EvaModuleRepositoryDatabase) initializeRepositories() error {
 	db.moduleRepo = repositories.NewModuleRepository(db.db)
 	db.releaseRepo = repositories.NewReleaseRepository(db.db)
 	db.releaseStatusRepo = repositories.NewReleaseStatusRepository(db.db)
+	db.developerRepo = repositories.NewDeveloperRepository(db.db)
+	db.developerAccountRepo = repositories.NewDeveloperAccountRepository(db.db)
+	db.moduleOwnerRepo = repositories.NewModuleOwnerRepository(db.db)
+	db.devModuleOwnerRepo = repositories.NewDeveloperModuleOwnerRepository(db.db)
+	db.moduleOwnerTypeRepo = repositories.NewModuleOwnerTypesRepository(db.db)
+	db.keywordRepo = repositories.NewKeywordRepository(db.db)
 	return nil
 }
 
@@ -119,4 +133,20 @@ func (db EvaModuleRepositoryDatabase) GetDeveloperRepository() repositories.Deve
 
 func (db EvaModuleRepositoryDatabase) GetDeveloperAccountRepository() repositories.DeveloperAccountRepository {
 	return db.developerAccountRepo
+}
+
+func (db EvaModuleRepositoryDatabase) GetModuleOwnerRepository() repositories.ModuleOwnerRepository {
+	return db.moduleOwnerRepo
+}
+
+func (db EvaModuleRepositoryDatabase) GetDeveloperModuleOwnerRepository() repositories.DeveloperModuleOwnerRepository {
+	return db.devModuleOwnerRepo
+}
+
+func (db EvaModuleRepositoryDatabase) GetModuleOwnerTypeRepository() repositories.ModuleOwnerTypesRepository {
+	return db.moduleOwnerTypeRepo
+}
+
+func (db EvaModuleRepositoryDatabase) GetKeywordRepository() repositories.KeywordRepository {
+	return db.keywordRepo
 }

@@ -12,6 +12,10 @@ const (
 	Organization
 )
 
+func GetModuleOwnerTypes() []ModuleOwnerTypeDef {
+	return []ModuleOwnerTypeDef{Dev, Group, Organization}
+}
+
 func (r ModuleOwnerTypeDef) String() string {
 	return [...]string{"Dev", "Group", "Organization"}[r]
 }

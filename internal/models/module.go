@@ -20,3 +20,10 @@ type Module struct {
 func NewModule(title string, repr string, description string, ownerID uint, owner ModuleOwner, keywords []Keyword) *Module {
 	return &Module{Title: title, Repr: repr, Description: description, OwnerID: ownerID, Owner: owner, Keywords: keywords}
 }
+
+func (m *Module) Update(title string, repr string, description string, keywords []Keyword) {
+	m.Title = title
+	m.Repr = repr
+	m.Description = description
+	m.Keywords = keywords
+}

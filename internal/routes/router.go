@@ -32,12 +32,14 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 
 	router.releaseHandler = handlers.NewReleaseHandler(be.GetReleaseService())
 
+	r.MaxMultipartMemory = 8 << 20 // 8 MB
 	modules := router.api.Group("/modules")
 	{
 		modules.GET("/:id", router.moduleHandler.FindByID) // GET /api/modules/:id
 		modules.GET("/search", router.moduleHandler.SearchModulesByTags)
 		modules.GET("/:id/delete", router.moduleHandler.Delete)
 		modules.POST("/upload", router.moduleHandler.Upload)
+		modules.POST("/update", router.moduleHandler.Update)
 	}
 
 	releases := router.api.Group("releases")

@@ -12,7 +12,8 @@ import (
 
 type ModuleRepository interface {
 	Create(dev *models.Module) error
-	FindByID(id uint) (*models.Module, error)
+	Update(mod *models.Module) error
+	FindByID(id uint, preload bool) (*models.Module, error)
 	SearchByKeywords(tags []string) ([]models.Module, error)
 	Delete(id uint) (bool, error)
 }
@@ -29,9 +30,14 @@ func (r *moduleRepository) Create(mod *models.Module) error {
 	return r.db.Create(mod).Error
 }
 
-func (r moduleRepository) FindByID(id uint) (*models.Module, error) {
+func (r moduleRepository) FindByID(id uint, preload bool) (*models.Module, error) {
 	var m models.Module
-	err := r.db.First(&m, id).Error
+	var err error
+	if preload {
+		err = r.db.Preload("Owner").Preload("Keywords").Preload("Owner.Type").Preload("Owner.Type").First(&m, id).Error
+	} else {
+		err = r.db.First(&m, id).Error
+	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -55,6 +61,10 @@ func (r moduleRepository) Delete(id uint) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (r *moduleRepository) Update(mod *models.Module) error {
+	return r.db.Save(mod).Error
 }
 
 func (r moduleRepository) SearchByKeywords(tags []string) ([]models.Module, error) {

@@ -71,7 +71,6 @@ func (h *ModuleHandler) Upload(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid User ID format",
-			/*			"details": err.Error(),*/
 		})
 		return
 	}
@@ -96,29 +95,61 @@ func (h *ModuleHandler) Upload(c *gin.Context) {
 		return
 	}
 
-	// Save file to disk (example: ./uploads/)
-	/*    uploadPath := fmt.Sprintf("./uploads/%s", file.Filename)
-	      if err := c.SaveUploadedFile(file, uploadPath); err != nil {
-	          c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-	          return
-	      }
-
-	      // Create record in DB
-	      module := Module{
-	          Title:       title,
-	          Repr:        repr,
-	          Description: description,
-	          FilePath:    uploadPath,
-	      }
-
-	      if err := db.Create(&module).Error; err != nil {
-	          c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	          return
-	      }
-	*/
 	// Respond with created resource
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Module created successfully",
+		"module":  id,
+	})
+}
+
+func (h *ModuleHandler) Update(c *gin.Context) {
+	// Parse form fields
+	userID := c.PostForm("userId")
+	modID := c.PostForm("modId")
+	title := c.PostForm("title")
+	repr := c.PostForm("repr")
+	tags := c.PostForm("tags")
+	description := c.PostForm("description")
+
+	idUint, err := utils.StringToUint(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid User ID format",
+		})
+		return
+	}
+
+	modIDUint, err := utils.StringToUint(modID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid Module ID format",
+		})
+		return
+	}
+
+	// Validate required fields
+	if title == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Title is required"})
+		return
+	}
+
+	// Handle file upload
+	file, err := c.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "File upload failed"})
+		return
+	}
+
+	// Call service to create module
+	id, err := h.service.UpdateUserModule(idUint, modIDUint, title, description, repr, file, tags, c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Respond with created resource
+	c.JSON(http.StatusCreated, gin.H{
+		"message": "Module updated successfully",
 		"module":  id,
 	})
 }

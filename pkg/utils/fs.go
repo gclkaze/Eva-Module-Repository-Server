@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"path/filepath"
 )
 
 func FolderExists(folder string) bool {
@@ -17,4 +18,20 @@ func CreateFolder(folder string) error {
 		}
 	}
 	return err
+}
+
+func CleanFolder(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		path := filepath.Join(dir, entry.Name())
+		err := os.RemoveAll(path) // Removes file or directory recursively
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

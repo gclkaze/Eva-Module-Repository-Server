@@ -19,7 +19,7 @@ type keywordRepository struct {
 	db *gorm.DB
 }
 
-func NewRepository(db *gorm.DB) KeywordRepository {
+func NewKeywordRepository(db *gorm.DB) KeywordRepository {
 	return &keywordRepository{db: db}
 }
 

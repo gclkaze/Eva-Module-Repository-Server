@@ -6,7 +6,7 @@ import (
 )
 
 type ModuleOwnerRepository interface {
-	Create(t *models.ModuleOwnerType, entityId uint) error
+	Create(t *models.ModuleOwnerType, entityId uint) (*models.ModuleOwner, error)
 }
 
 type moduleOwnerRepository struct {
@@ -17,11 +17,12 @@ func NewModuleOwnerRepository(db *gorm.DB) ModuleOwnerRepository {
 	return &moduleOwnerRepository{db: db}
 }
 
-func (m *moduleOwnerRepository) Create(t *models.ModuleOwnerType, entityId uint) error {
+func (m *moduleOwnerRepository) Create(t *models.ModuleOwnerType, entityId uint) (*models.ModuleOwner, error) {
+
 	moduleOwner := models.NewModuleOwner(*t, entityId)
 	res := m.db.Create(moduleOwner)
 	if res.Error != nil {
-		return res.Error
+		return nil, res.Error
 	}
-	return nil
+	return moduleOwner, nil
 }
