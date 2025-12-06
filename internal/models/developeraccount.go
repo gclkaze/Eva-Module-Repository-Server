@@ -6,8 +6,6 @@ import (
 
 type DeveloperAccount struct {
 	gorm.Model
-	//DeveloperID uint `json:"developer_id"`
-	//Developer   Developer `gorm:"foreignKey:Developer"`
 }
 
 func NewDeveloperAccount() *DeveloperAccount {
