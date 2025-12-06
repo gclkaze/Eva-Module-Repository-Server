@@ -187,12 +187,24 @@ func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, 
 	return mod.ID, nil
 }
 
-func (s ModuleService) moduleHasPendingRelease(modID uint) (bool, error) {
-	return false, nil
-}
+func (s ModuleService) GetFolderSize(mod *models.Module) (int64, error) {
 
-func (s ModuleService) userHasPendingRelease() (bool, error) {
-	return false, nil
+	dmo, err := s.ownershipService.FindDeveloperModuleOwner(&mod.Owner)
+	if err != nil {
+		return 0, err
+	}
+
+	modPath := s.GetModulePath(dmo, mod)
+	if !utils.FolderExists(modPath) {
+		err = fmt.Errorf("module path does not exist %s", modPath)
+		return 0, err
+	}
+
+	sz, err := utils.ComputeFolderSizeBytes(modPath)
+	if err != nil {
+		return 0, err
+	}
+	return sz, nil
 }
 
 func (s *ModuleService) SuggestUserModuleRelease(userID uint, modID uint, version string) (uint, error) {
@@ -209,7 +221,14 @@ func (s *ModuleService) SuggestUserModuleRelease(userID uint, modID uint, versio
 		return 0, fmt.Errorf("user with ID %d didn't match with the module type", userID)
 	}
 
-	s.releaseService.SuggestUserModuleRelease(userID, mod, version)
+	diskSize, err := s.GetFolderSize(mod)
+	if err != nil {
+		return 0, err
+	}
+	if diskSize == 0 {
+		return 0, fmt.Errorf("the module size is 0. Cannot proceed with the release")
+	}
+	s.releaseService.SuggestUserModuleRelease(userID, mod, version, diskSize)
 
 	/*	mod.Update(title, repr, descr, keywords)
 		err = s.repo.Update(mod)

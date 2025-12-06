@@ -11,7 +11,7 @@ type ReleaseDTO struct {
 	Version     string    `json:"version" binding:"required"`
 	ReleasedAt  time.Time `json:"released_at" binding:"required"`
 	Description string    `json:"description" binding:"required"`
-	DiskSize    uint      `json:"diskSize" binding:"required"`
+	DiskSize    int64     `json:"diskSize" binding:"required"`
 
 	Keywords []KeywordDTO `json:"keywords" binding:"required"`
 }

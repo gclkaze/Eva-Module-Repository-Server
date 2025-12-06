@@ -1,12 +1,28 @@
 package repositories
 
 import (
+	"errors"
+
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"gorm.io/gorm"
 )
 
+type ReleaseStatusTypeDef int
+
+const (
+	Draft ReleaseStatusTypeDef = iota
+	Pending
+	Accepted
+	Rejected
+)
+
+func (t ReleaseStatusTypeDef) String() string {
+	return [...]string{"draft", "pending", "accepted", "rejected"}[t]
+}
+
 type ReleaseStatusRepository interface {
 	Initialize() error
+	GetStatus(t ReleaseStatusTypeDef) (*models.ModuleReleaseStatus, error)
 }
 
 type releaseStatusRepository struct {
@@ -31,4 +47,13 @@ func (r releaseStatusRepository) Initialize() error {
 		}
 	}
 	return nil
+}
+
+func (r releaseStatusRepository) GetStatus(t ReleaseStatusTypeDef) (*models.ModuleReleaseStatus, error) {
+	var m models.ModuleReleaseStatus
+	res := r.db.Where("label = ?", t.String())
+	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return &m, nil
 }

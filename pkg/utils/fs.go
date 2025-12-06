@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -34,4 +35,35 @@ func CleanFolder(dir string) error {
 		}
 	}
 	return nil
+}
+
+func ComputeFolderSizeBytes(root string) (int64, error) {
+	var total int64
+
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			// Propagate errors (e.g., permission denied)
+			return err
+		}
+		// Skip directories
+		if d.IsDir() {
+			return nil
+		}
+
+		// Get FileInfo to access size
+		info, err := d.Info()
+		if err != nil {
+			// If a file disappears or is unreadable, decide whether to ignore or fail.
+			// Here we choose to fail.
+			return err
+		}
+
+		// Only count regular files
+		if info.Mode().IsRegular() {
+			total += info.Size()
+		}
+		return nil
+	})
+
+	return total, err
 }

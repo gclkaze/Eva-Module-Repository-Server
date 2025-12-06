@@ -1,6 +1,8 @@
 package services
 
 import (
+	"fmt"
+
 	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/repositories"
@@ -22,27 +24,49 @@ func (s *ReleaseService) DeleteModuleRelease(id uint, releaseID uint) (bool, err
 }
 
 func (s ReleaseService) moduleHasPendingRelease(modID uint) (bool, error) {
-	releases, err := s.repo.GetModuleReleasesWithStatus(modID, 1)
+	st, err := s.statusRepo.GetStatus(repositories.Pending)
+	if err != nil {
+		return false, err
+	}
 
-	return false, nil
+	releases, err := s.repo.GetModuleReleasesWithStatus(modID, st.ID)
+	if err != nil {
+		return false, err
+	}
+	return len(releases) != 0, nil
 }
 
 func (s ReleaseService) userHasPendingRelease(userID uint) (bool, error) {
 	return false, nil
 }
 
-func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Module, version string) (uint, error) {
-	dmo, err := s.ownershipService.FindDeveloperModuleOwner(&mod.Owner)
+func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Module, version string, sz int64) (uint, error) {
+	/*dmo, err := s.ownershipService.FindDeveloperModuleOwner(&mod.Owner)
 	if err != nil {
 		return 0, err
-	}
-	devID := dmo.DeveloperID
+	}*/
+	//devID := dmo.DeveloperID
 	modID := mod.ID
 
 	res, err := s.moduleHasPendingRelease(modID)
-	res, err = s.userHasPendingRelease(devID)
-	return 1, nil
+	if err != nil {
+		return 0, err
+	}
+
+	if res {
+		return 0, fmt.Errorf("therer are is a pending release of that module, need to cancel, reject, accept it first to create a new release.")
+	}
+	st, err := s.statusRepo.GetStatus(repositories.Pending)
+	if err != nil {
+		return 0, err
+	}
+	newRelease := models.NewModuleReleaseFromModule(mod, version, *st, sz)
+	s.repo.Create(newRelease)
+	//res, err = s.userHasPendingRelease(devID)
+	return newRelease.ID, nil
 }
+
+func (s ReleaseService) GetFolderSize()
 
 func (s *ReleaseService) GetModuleRelease(id uint, releaseID uint) (*dto.ReleaseDTO, error) {
 	result, error := s.repo.GetModuleRelease(id, releaseID)
