@@ -25,11 +25,13 @@ type EvaModuleRepositoryDatabase struct {
 	releaseRepo          repositories.ReleaseRepository
 	releaseStatusRepo    repositories.ReleaseStatusRepository
 	developerRepo        repositories.DeveloperRepository
-	developerAccountRepo repositories.DeveloperAccountRepository
+	developerAccountRepo repositories.UserAccountRepository
 	moduleOwnerRepo      repositories.ModuleOwnerRepository
 	devModuleOwnerRepo   repositories.DeveloperModuleOwnerRepository
 	moduleOwnerTypeRepo  repositories.ModuleOwnerTypesRepository
 	keywordRepo          repositories.KeywordRepository
+	userPermissionRepo   repositories.UserPermissionRepository
+	userRoleRepo         repositories.UserRoleRepository
 }
 
 func NewEvaModuleRepositoryDatabase() *EvaModuleRepositoryDatabase {
@@ -80,7 +82,9 @@ func (db *EvaModuleRepositoryDatabase) Initialize(p *properties.Properties) erro
 		&models.ModuleReleaseStatus{},
 		&models.ModuleOwnerType{},
 		&models.ModuleOwner{},
-		&models.DeveloperAccount{},
+		&models.UserPermission{},
+		&models.UserRole{},
+		&models.UserAccount{},
 		&models.Developer{},
 		&models.Module{},
 		&models.ModuleRelease{},
@@ -107,11 +111,13 @@ func (db *EvaModuleRepositoryDatabase) initializeRepositories() error {
 	db.releaseRepo = repositories.NewReleaseRepository(db.db)
 	db.releaseStatusRepo = repositories.NewReleaseStatusRepository(db.db)
 	db.developerRepo = repositories.NewDeveloperRepository(db.db)
-	db.developerAccountRepo = repositories.NewDeveloperAccountRepository(db.db)
+	db.developerAccountRepo = repositories.NewUserAccountRepository(db.db)
 	db.moduleOwnerRepo = repositories.NewModuleOwnerRepository(db.db)
 	db.devModuleOwnerRepo = repositories.NewDeveloperModuleOwnerRepository(db.db)
 	db.moduleOwnerTypeRepo = repositories.NewModuleOwnerTypesRepository(db.db)
 	db.keywordRepo = repositories.NewKeywordRepository(db.db)
+	db.userPermissionRepo = repositories.NewUserPermissionRepository(db.db) //repositories.UserPermissionRepository
+	db.userRoleRepo = repositories.NewUserRoleRepository(db.db)             //repositories.UserRoleRepository
 	return nil
 }
 
@@ -131,7 +137,7 @@ func (db EvaModuleRepositoryDatabase) GetDeveloperRepository() repositories.Deve
 	return db.developerRepo
 }
 
-func (db EvaModuleRepositoryDatabase) GetDeveloperAccountRepository() repositories.DeveloperAccountRepository {
+func (db EvaModuleRepositoryDatabase) GetDeveloperAccountRepository() repositories.UserAccountRepository {
 	return db.developerAccountRepo
 }
 
@@ -149,4 +155,12 @@ func (db EvaModuleRepositoryDatabase) GetModuleOwnerTypeRepository() repositorie
 
 func (db EvaModuleRepositoryDatabase) GetKeywordRepository() repositories.KeywordRepository {
 	return db.keywordRepo
+}
+
+func (db EvaModuleRepositoryDatabase) GetUserPermissionRepository() repositories.UserPermissionRepository {
+	return db.userPermissionRepo
+}
+
+func (db EvaModuleRepositoryDatabase) GetUserRoleRepository() repositories.UserRoleRepository {
+	return db.userRoleRepo
 }

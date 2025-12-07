@@ -28,12 +28,12 @@ type ModuleService struct {
 
 	logger logger.ILogger
 
-	developerService *DeveloperService
+	developerService *UserService
 	ownershipService *ModuleOwnershipService
 	releaseService   *ReleaseService
 }
 
-func NewModuleService(repo repositories.ModuleRepository, dev *DeveloperService, p *properties.Properties, ownershipService *ModuleOwnershipService, keywordRepo repositories.KeywordRepository, releaseService *ReleaseService) (*ModuleService, error) {
+func NewModuleService(repo repositories.ModuleRepository, dev *UserService, p *properties.Properties, ownershipService *ModuleOwnershipService, keywordRepo repositories.KeywordRepository, releaseService *ReleaseService) (*ModuleService, error) {
 	moduleFolder := p.GetString("module_folder", "")
 	releaseFolder := p.GetString("release_folder", "")
 	devFolder := p.GetString("dev_folder", "")
@@ -87,7 +87,7 @@ func (s *ModuleService) CreateModule(userID uint, title string, descr string, re
 		return 0, fmt.Errorf("the module title cannot be empty")
 	}
 
-	dev, err := s.developerService.FindById(userID)
+	dev, err := s.developerService.FindByID(userID)
 	if err != nil {
 		return 0, err
 	}

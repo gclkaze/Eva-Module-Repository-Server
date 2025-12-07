@@ -17,7 +17,7 @@ type EvaModuleRepositoryBackend struct {
 
 	moduleService          *services.ModuleService
 	releaseService         *services.ReleaseService
-	developerService       *services.DeveloperService
+	userService            *services.UserService
 	moduleOwnershipService *services.ModuleOwnershipService
 }
 
@@ -45,19 +45,17 @@ func (be *EvaModuleRepositoryBackend) initializeServices() error {
 	be.moduleOwnershipService = services.NewModuleOwnershipService(be.db.GetModuleOwnerRepository(), be.db.GetModuleOwnerTypeRepository(), be.db.GetDeveloperModuleOwnerRepository())
 	be.releaseService = services.NewReleaseService(be.db.GetReleaseRepository(), be.db.GetReleaseStatusRepository(), be.moduleOwnershipService)
 
-	be.developerService = services.NewDeveloperService(be.db.GetDeveloperRepository(), be.db.GetDeveloperAccountRepository(), be.properties)
+	be.userService = services.NewUserService(be.db.GetDeveloperRepository(), be.db.GetDeveloperAccountRepository(),
+		be.db.GetUserPermissionRepository(), be.db.GetUserRoleRepository(),
+		be.properties)
 
-	inst, err := services.NewModuleService(be.db.GetModuleRepository(), be.developerService, be.properties, be.moduleOwnershipService, be.db.GetKeywordRepository(), be.releaseService)
+	inst, err := services.NewModuleService(be.db.GetModuleRepository(), be.userService, be.properties, be.moduleOwnershipService, be.db.GetKeywordRepository(), be.releaseService)
 	if err != nil {
 		return err
 	}
 	be.moduleService = inst
-
-	/*	moduleOwnerRepo repositories.ModuleOwnerRepository,
-		moduleOwnerTypeRepo repositories.ModuleOwnerTypesRepository,
-		devModuleOwnerRepo repositories.DeveloperModuleOwnerRepository
-	*/
-	return nil
+	err = be.userService.Initialize()
+	return err
 }
 
 func (be *EvaModuleRepositoryBackend) GetModuleService() *services.ModuleService {
@@ -68,21 +66,10 @@ func (be *EvaModuleRepositoryBackend) GetReleaseService() *services.ReleaseServi
 	return be.releaseService
 }
 
-func (be *EvaModuleRepositoryBackend) GetDeveloperService() *services.DeveloperService {
-	return be.developerService
+func (be *EvaModuleRepositoryBackend) GetDeveloperService() *services.UserService {
+	return be.userService
 }
 
 func (be *EvaModuleRepositoryBackend) GetModuleOwnershipService() *services.ModuleOwnershipService {
 	return be.moduleOwnershipService
 }
-
-/*
-
-type ModuleReleaseStatus struct {
-    ID   uint   `gorm:"primaryKey"`
-    Name string `gorm:"unique;not null"`
-}
-
-
-
-*/

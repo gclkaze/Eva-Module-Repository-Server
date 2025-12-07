@@ -54,7 +54,7 @@ func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Modul
 	}
 
 	if res {
-		return 0, fmt.Errorf("therer are is a pending release of that module, need to cancel, reject, accept it first to create a new release.")
+		return 0, fmt.Errorf("there are is a pending release of that module, need to cancel, reject, accept it first to create a new release")
 	}
 	st, err := s.statusRepo.GetStatus(repositories.Pending)
 	if err != nil {
@@ -65,8 +65,6 @@ func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Modul
 	//res, err = s.userHasPendingRelease(devID)
 	return newRelease.ID, nil
 }
-
-func (s ReleaseService) GetFolderSize()
 
 func (s *ReleaseService) GetModuleRelease(id uint, releaseID uint) (*dto.ReleaseDTO, error) {
 	result, error := s.repo.GetModuleRelease(id, releaseID)
@@ -104,7 +102,7 @@ func (s *ReleaseService) SearchByKeywords(id uint, tags []string) ([]dto.Release
 		return nil, nil
 	}
 	var dtos []dto.ReleaseDTO
-	for i := 0; i < len(results); i++ {
+	for i := range results {
 		dtos = append(dtos, *dto.NewReleaseDTO(results[i]))
 	}
 	return dtos, error
