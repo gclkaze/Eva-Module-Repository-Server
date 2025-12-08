@@ -6,6 +6,7 @@ import (
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/logger"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/runtime"
 	"github.com/magiconair/properties"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService struct {
@@ -25,9 +26,13 @@ func NewUserService(repo repositories.DeveloperRepository, accountRepo repositor
 	return mod
 }
 
-func (s *UserService) Create(handle string, firstName string, lastName string, active bool, role *models.UserRole) (uint, error) {
+func (s *UserService) Create(handle string, firstName string, lastName string, email string, password string, active bool, role *models.UserRole) (uint, error) {
 	var dev *models.Developer
-	account := models.NewUserAccount(role)
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	password = string(hash)
+
+	account := models.NewUserAccount(role, email, password)
 
 	err := s.accountRepo.Create(account)
 	if err != nil {
@@ -84,7 +89,7 @@ func (s *UserService) InitializeUserRolePermissions() error {
 	return nil
 }
 
-func (d UserService) getRolePermissions(t models.UserRoleTypeDef) []models.UserPermission {
+func (s UserService) getRolePermissions(t models.UserRoleTypeDef) []models.UserPermission {
 	m := map[models.UserRoleTypeDef][]models.UserPermission{
 		models.Admin: {
 			{Value: models.CreateModule.String()},

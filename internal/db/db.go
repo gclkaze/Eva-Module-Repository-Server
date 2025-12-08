@@ -21,17 +21,18 @@ type EvaModuleRepositoryDatabase struct {
 	c      *EvaModuleRepositoryDatabaseConfig
 	db     *gorm.DB
 
-	moduleRepo           repositories.ModuleRepository
-	releaseRepo          repositories.ReleaseRepository
-	releaseStatusRepo    repositories.ReleaseStatusRepository
-	developerRepo        repositories.DeveloperRepository
-	developerAccountRepo repositories.UserAccountRepository
-	moduleOwnerRepo      repositories.ModuleOwnerRepository
-	devModuleOwnerRepo   repositories.DeveloperModuleOwnerRepository
-	moduleOwnerTypeRepo  repositories.ModuleOwnerTypesRepository
-	keywordRepo          repositories.KeywordRepository
-	userPermissionRepo   repositories.UserPermissionRepository
-	userRoleRepo         repositories.UserRoleRepository
+	moduleRepo          repositories.ModuleRepository
+	releaseRepo         repositories.ReleaseRepository
+	releaseStatusRepo   repositories.ReleaseStatusRepository
+	developerRepo       repositories.DeveloperRepository
+	userAccountRepo     repositories.UserAccountRepository
+	moduleOwnerRepo     repositories.ModuleOwnerRepository
+	devModuleOwnerRepo  repositories.DeveloperModuleOwnerRepository
+	moduleOwnerTypeRepo repositories.ModuleOwnerTypesRepository
+	keywordRepo         repositories.KeywordRepository
+	userPermissionRepo  repositories.UserPermissionRepository
+	userRoleRepo        repositories.UserRoleRepository
+	devAccountRepo      repositories.DeveloperRepository
 }
 
 func NewEvaModuleRepositoryDatabase() *EvaModuleRepositoryDatabase {
@@ -111,7 +112,8 @@ func (db *EvaModuleRepositoryDatabase) initializeRepositories() error {
 	db.releaseRepo = repositories.NewReleaseRepository(db.db)
 	db.releaseStatusRepo = repositories.NewReleaseStatusRepository(db.db)
 	db.developerRepo = repositories.NewDeveloperRepository(db.db)
-	db.developerAccountRepo = repositories.NewUserAccountRepository(db.db)
+	db.userAccountRepo = repositories.NewUserAccountRepository(db.db)
+	db.devAccountRepo = repositories.NewDeveloperRepository(db.db)
 	db.moduleOwnerRepo = repositories.NewModuleOwnerRepository(db.db)
 	db.devModuleOwnerRepo = repositories.NewDeveloperModuleOwnerRepository(db.db)
 	db.moduleOwnerTypeRepo = repositories.NewModuleOwnerTypesRepository(db.db)
@@ -137,8 +139,12 @@ func (db EvaModuleRepositoryDatabase) GetDeveloperRepository() repositories.Deve
 	return db.developerRepo
 }
 
-func (db EvaModuleRepositoryDatabase) GetDeveloperAccountRepository() repositories.UserAccountRepository {
-	return db.developerAccountRepo
+func (db EvaModuleRepositoryDatabase) GetUserAccountRepository() repositories.UserAccountRepository {
+	return db.userAccountRepo
+}
+
+func (db EvaModuleRepositoryDatabase) GetDevAccountRepository() repositories.DeveloperRepository {
+	return db.devAccountRepo
 }
 
 func (db EvaModuleRepositoryDatabase) GetModuleOwnerRepository() repositories.ModuleOwnerRepository {

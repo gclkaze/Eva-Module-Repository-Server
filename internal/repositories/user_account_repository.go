@@ -10,6 +10,7 @@ import (
 type UserAccountRepository interface {
 	Create(k *models.UserAccount) error
 	FindByID(id uint) (*models.UserAccount, error)
+	FindByEmail(email string) (*models.UserAccount, error)
 	Delete(id uint) (bool, error)
 }
 
@@ -28,6 +29,18 @@ func (d *userAccountRepository) Create(dev *models.UserAccount) error {
 func (d *userAccountRepository) FindByID(id uint) (*models.UserAccount, error) {
 	var dev models.UserAccount
 	err := d.db.First(&dev, 1).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &dev, nil
+}
+
+func (d *userAccountRepository) FindByEmail(email string) (*models.UserAccount, error) {
+	var dev models.UserAccount
+	err := d.db.Where("email = ?", email).First(&dev, 1).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

@@ -19,11 +19,16 @@ type EvaModuleRepositoryBackend struct {
 	releaseService         *services.ReleaseService
 	userService            *services.UserService
 	moduleOwnershipService *services.ModuleOwnershipService
+	authService            *services.AuthService
 }
 
 func NewEvaModuleRepositoryBackend() *EvaModuleRepositoryBackend {
 	inst := &EvaModuleRepositoryBackend{}
 	return inst
+}
+
+func (be EvaModuleRepositoryBackend) GetJWTSecret() string {
+	return be.authService.GetJWTSecret()
 }
 
 func (be *EvaModuleRepositoryBackend) Initialize() error {
@@ -45,7 +50,7 @@ func (be *EvaModuleRepositoryBackend) initializeServices() error {
 	be.moduleOwnershipService = services.NewModuleOwnershipService(be.db.GetModuleOwnerRepository(), be.db.GetModuleOwnerTypeRepository(), be.db.GetDeveloperModuleOwnerRepository())
 	be.releaseService = services.NewReleaseService(be.db.GetReleaseRepository(), be.db.GetReleaseStatusRepository(), be.moduleOwnershipService)
 
-	be.userService = services.NewUserService(be.db.GetDeveloperRepository(), be.db.GetDeveloperAccountRepository(),
+	be.userService = services.NewUserService(be.db.GetDeveloperRepository(), be.db.GetUserAccountRepository(),
 		be.db.GetUserPermissionRepository(), be.db.GetUserRoleRepository(),
 		be.properties)
 
@@ -55,6 +60,8 @@ func (be *EvaModuleRepositoryBackend) initializeServices() error {
 	}
 	be.moduleService = inst
 	err = be.userService.Initialize()
+
+	be.authService = services.NewAuthService(be.db.GetUserAccountRepository(), be.db.GetDevAccountRepository(), be.properties)
 	return err
 }
 
@@ -72,4 +79,7 @@ func (be *EvaModuleRepositoryBackend) GetDeveloperService() *services.UserServic
 
 func (be *EvaModuleRepositoryBackend) GetModuleOwnershipService() *services.ModuleOwnershipService {
 	return be.moduleOwnershipService
+}
+func (be *EvaModuleRepositoryBackend) GetAuthService() *services.AuthService {
+	return be.authService
 }

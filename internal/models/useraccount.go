@@ -7,10 +7,12 @@ import (
 type UserAccount struct {
 	gorm.Model
 
+	Email    string `gorm:"uniqueIndex" json:"email"`
+	Password string
 	RoleID   uint     `json:"user_id"`
 	UserRole UserRole `gorm:"foreignKey:RoleID"`
 }
 
-func NewUserAccount(role *UserRole) *UserAccount {
-	return &UserAccount{RoleID: role.ID, UserRole: *role}
+func NewUserAccount(role *UserRole, email string, password string) *UserAccount {
+	return &UserAccount{RoleID: role.ID, UserRole: *role, Email: email, Password: password}
 }

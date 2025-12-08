@@ -2,6 +2,8 @@ package utils
 
 import (
 	"strconv"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func StringToUint(str string) (uint, error) {
@@ -18,4 +20,9 @@ func StringToUint(str string) (uint, error) {
 
 func UintToString(i uint) string {
 	return strconv.FormatUint(uint64(i), 10)
+}
+
+func HashPassword(pw string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
+	return string(bytes), err
 }
