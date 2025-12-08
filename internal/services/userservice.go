@@ -47,8 +47,38 @@ func (s *UserService) Create(handle string, firstName string, lastName string, e
 	return dev.ID, nil
 }
 
+func (s *UserService) CreateUser(handle string, firstName string, lastName string, email string, password string, active bool) (uint, error) {
+	var dev *models.Developer
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	password = string(hash)
+
+	role, err := s.roleRepo.FindByValue(models.User.String())
+	if err != nil {
+		return 0, err
+	}
+
+	account := models.NewUserAccount(role, email, password)
+
+	err = s.accountRepo.Create(account)
+	if err != nil {
+		return 0, err
+	}
+
+	dev = models.NewDeveloper(handle, firstName, lastName, account.ID, *account, active)
+	err = s.repo.Create(dev)
+	if err != nil {
+		return 0, err
+	}
+	return dev.ID, nil
+}
+
 func (s *UserService) FindByID(id uint) (*models.Developer, error) {
 	return s.repo.FindByID(id)
+}
+
+func (s *UserService) FindUserByID(id uint) (*models.UserAccount, error) {
+	return s.accountRepo.FindByID(id)
 }
 
 func (s *UserService) Initialize() error {

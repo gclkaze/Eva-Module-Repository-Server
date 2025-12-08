@@ -30,6 +30,22 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	//need to create the user
+	if user == nil {
+
+		//handle string, firstName string, lastName string, email string, password string, active bool, role *models.UserRole
+		userID, err := h.userService.CreateUser(req.Handle, req.FirstName, req.LastName, req.Email, req.Password, true)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+		user, err = h.userService.FindUserByID(userID)
+		if err != nil {
+			c.JSON(400, gin.H{"error": err.Error()})
+			return
+		}
+	}
+
 	access, refresh, err := h.service.GenerateTokens(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "token creation failed"})
