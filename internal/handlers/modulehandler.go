@@ -60,20 +60,11 @@ func (h *ModuleHandler) Delete(c *gin.Context) {
 }
 
 func (h *ModuleHandler) Upload(c *gin.Context) {
-	// Parse form fields
-	userID := c.PostForm("userId")
+	userID := c.GetUint("userId")
 	title := c.PostForm("title")
 	repr := c.PostForm("repr")
 	tags := c.PostForm("tags")
 	description := c.PostForm("description")
-
-	idUint, err := utils.StringToUint(userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid User ID format",
-		})
-		return
-	}
 
 	// Validate required fields
 	if title == "" {
@@ -89,7 +80,7 @@ func (h *ModuleHandler) Upload(c *gin.Context) {
 	}
 
 	// Call service to create module
-	id, err := h.service.CreateModule(idUint, title, description, repr, file, tags, c)
+	id, err := h.service.CreateModule(userID, title, description, repr, file, tags, c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -103,20 +94,12 @@ func (h *ModuleHandler) Upload(c *gin.Context) {
 }
 
 func (h *ModuleHandler) Update(c *gin.Context) {
-	userID := c.PostForm("userId")
+	userID := c.GetUint("userId")
 	modID := c.PostForm("modId")
 	title := c.PostForm("title")
 	repr := c.PostForm("repr")
 	tags := c.PostForm("tags")
 	description := c.PostForm("description")
-
-	idUint, err := utils.StringToUint(userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid User ID format",
-		})
-		return
-	}
 
 	modIDUint, err := utils.StringToUint(modID)
 	if err != nil {
@@ -137,7 +120,7 @@ func (h *ModuleHandler) Update(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.UpdateUserModule(idUint, modIDUint, title, description, repr, file, tags, c)
+	id, err := h.service.UpdateUserModule(userID, modIDUint, title, description, repr, file, tags, c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -150,17 +133,9 @@ func (h *ModuleHandler) Update(c *gin.Context) {
 }
 
 func (h *ModuleHandler) SuggestRelease(c *gin.Context) {
-	userID := c.PostForm("userId")
+	userID := c.GetUint("userId")
 	modID := c.PostForm("modId")
 	version := c.PostForm("version")
-
-	idUint, err := utils.StringToUint(userID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid User ID format",
-		})
-		return
-	}
 
 	modIDUint, err := utils.StringToUint(modID)
 	if err != nil {
@@ -170,7 +145,7 @@ func (h *ModuleHandler) SuggestRelease(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.SuggestUserModuleRelease(idUint, modIDUint, version)
+	id, err := h.service.SuggestUserModuleRelease(userID, modIDUint, version)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

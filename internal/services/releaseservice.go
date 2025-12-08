@@ -19,8 +19,8 @@ func NewReleaseService(repo repositories.ReleaseRepository, statusRepo repositor
 	return &ReleaseService{repo: repo, statusRepo: statusRepo, ownershipService: ownershipService}
 }
 
-func (s *ReleaseService) DeleteModuleRelease(id uint, releaseID uint) (bool, error) {
-	return s.repo.DeleteModuleRelease(id, releaseID)
+func (s *ReleaseService) DeleteModuleRelease(userID uint, id uint, releaseID uint) (bool, error) {
+	return s.repo.DeleteModuleRelease(userID, id, releaseID)
 }
 
 func (s ReleaseService) moduleHasPendingRelease(modID uint) (bool, error) {

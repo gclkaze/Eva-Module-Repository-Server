@@ -46,7 +46,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 	{
 		modules.GET("/:id", router.moduleHandler.FindByID) // GET /api/modules/:id
 		modules.GET("/search", router.moduleHandler.SearchModulesByTags)
-		modules.GET("/:id/delete", middleware.AuthMiddleware(be.GetJWTSecret()), router.moduleHandler.Delete)
+		modules.GET("/:id/delete", middleware.AuthMiddleware(be.GetJWTSecret()), router.moduleHandler.Delete) //needs userID to be passed
 		modules.POST("/upload", middleware.AuthMiddleware(be.GetJWTSecret()), router.moduleHandler.Upload)
 		modules.POST("/update", middleware.AuthMiddleware(be.GetJWTSecret()), router.moduleHandler.Update)
 		modules.POST("/suggest", middleware.AuthMiddleware(be.GetJWTSecret()), router.moduleHandler.SuggestRelease)
