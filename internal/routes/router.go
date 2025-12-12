@@ -16,9 +16,10 @@ type EvaModuleRepositoryRouter struct {
 	r    *gin.Engine
 	port string
 
-	moduleHandler  *handlers.ModuleHandler
-	releaseHandler *handlers.ReleaseHandler
-	authHandler    *handlers.AuthHandler
+	moduleHandler   *handlers.ModuleHandler
+	downloadHandler *handlers.DownloadHandler
+	releaseHandler  *handlers.ReleaseHandler
+	authHandler     *handlers.AuthHandler
 }
 
 func NewEvaModuleRepositoryRouter() *EvaModuleRepositoryRouter {
@@ -32,6 +33,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 	router.moduleHandler = handlers.NewModuleHandler(be.GetModuleService())
 	router.releaseHandler = handlers.NewReleaseHandler(be.GetReleaseService())
 	router.authHandler = handlers.NewAuthHandler(be.GetAuthService(), be.GetDeveloperService())
+	router.downloadHandler = handlers.NewDownloadHandler(be.GetModuleService())
 
 	r.MaxMultipartMemory = 8 << 20 // 8 MB
 
@@ -58,6 +60,20 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 		releases.GET("/:id/release/:releaseId", router.releaseHandler.GetModuleRelease) // GET /api/releases/:id/release/:releaseId
 		releases.GET("/:id/search", router.releaseHandler.SearchByKeywords)
 		releases.POST("/:id/delete/:releaseId", middleware.AuthMiddleware(be.GetJWTSecret()), router.releaseHandler.DeleteModuleRelease) // GET /api/releases/:id/delete/:releaseId
+		releases.POST("/:id/cancel/:releaseId", middleware.AuthMiddleware(be.GetJWTSecret()), router.releaseHandler.CancelSuggestedRelease)
+	}
+
+	download := router.api.Group("download")
+	{
+		download.GET("/release/:id", router.downloadHandler.DownloadRelease) //the release needs to be accepted
+	}
+
+	supervision := router.api.Group("supervise")
+	{
+		supervision.GET("/download/release/:id", router.downloadHandler.DownloadAnyRelease)
+		supervision.GET("/reject/release/:id", router.releaseHandler.RejectRelease)
+		supervision.GET("/accept/release/:id", router.releaseHandler.AcceptRelease)
+		supervision.GET("/cancel/release/:id", router.releaseHandler.CancelRelease)
 	}
 
 	if config.TheConfigReader.IsOnError() {

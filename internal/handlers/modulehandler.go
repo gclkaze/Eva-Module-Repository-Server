@@ -46,7 +46,6 @@ func (h *ModuleHandler) Delete(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid ID format",
-			/*			"details": err.Error(),*/
 		})
 		return
 	}

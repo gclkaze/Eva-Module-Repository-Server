@@ -18,6 +18,18 @@ func NewReleaseHandler(service *services.ReleaseService) *ReleaseHandler {
 	return &ReleaseHandler{service: service}
 }
 
+func (h *ReleaseHandler) RejectRelease(c *gin.Context) {
+
+}
+
+func (h *ReleaseHandler) AcceptRelease(c *gin.Context) {
+
+}
+
+func (h *ReleaseHandler) CancelRelease(c *gin.Context) {
+
+}
+
 func (h *ReleaseHandler) DeleteModuleRelease(c *gin.Context) {
 	id := c.Param("id")
 	userID := c.GetUint("userId")
@@ -40,6 +52,36 @@ func (h *ReleaseHandler) DeleteModuleRelease(c *gin.Context) {
 	}
 
 	result, err := h.service.DeleteModuleRelease(userID, idUint, releaseIDUint)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(200, result)
+}
+
+func (h *ReleaseHandler) CancelSuggestedRelease(c *gin.Context) {
+	id := c.Param("id")
+	userID := c.GetUint("userId")
+
+	idUint, err := utils.StringToUint(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid ID format",
+		})
+		return
+	}
+
+	releaseID := c.Param("releaseId")
+	releaseIDUint, err := utils.StringToUint(releaseID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid Release ID format",
+		})
+		return
+	}
+
+	result, err := h.service.CancelSuggestedModuleRelease(userID, idUint, releaseIDUint)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return

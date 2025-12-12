@@ -14,10 +14,11 @@ const (
 	Pending
 	Accepted
 	Rejected
+	Canceled
 )
 
 func (t ReleaseStatusTypeDef) String() string {
-	return [...]string{"draft", "pending", "accepted", "rejected"}[t]
+	return [...]string{"draft", "pending", "accepted", "rejected", "canceled"}[t]
 }
 
 type ReleaseStatusRepository interface {
@@ -34,7 +35,7 @@ func NewReleaseStatusRepository(db *gorm.DB) ReleaseStatusRepository {
 }
 
 func (r releaseStatusRepository) Initialize() error {
-	statuses := []string{"draft", "pending", "accepted", "rejected"}
+	statuses := []string{"draft", "pending", "accepted", "rejected", "canceled"}
 	description := []string{"This is a draft of a release.", "The release is waiting to be checked by the EVA Language Team.", "The release has been accepted by the EVA Language Team.", "The release has been rejected by the EVA Language Team."}
 
 	for i, status := range statuses {

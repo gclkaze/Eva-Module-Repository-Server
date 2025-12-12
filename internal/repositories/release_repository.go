@@ -12,12 +12,15 @@ import (
 
 type ReleaseRepository interface {
 	Create(dev *models.ModuleRelease) error
+	Update(mr *models.ModuleRelease) error
 	FindByID(id uint) (*models.ModuleRelease, error)
 	DeleteModuleRelease(userID uint, id uint, releaseID uint) (bool, error)
+	CancelSuggestedModuleRelease(userID uint, id uint, releaseID uint) (bool, error)
 	GetModuleRelease(id uint, releaseID uint) (*models.ModuleRelease, error)
 	GetModuleReleases(id uint) ([]models.ModuleRelease, error)
 	SearchModuleReleasesByTags(id uint, tags []string) ([]models.ModuleRelease, error)
 	GetModuleReleasesWithStatus(id uint, statusID uint) ([]models.ModuleRelease, error)
+	GetModuleReleaseWithStatus(id uint, releaseID uint, statusID uint) (*models.ModuleRelease, error)
 }
 
 type releaseRepository struct {
@@ -43,6 +46,10 @@ func (r releaseRepository) FindByID(id uint) (*models.ModuleRelease, error) {
 	}
 
 	return &m, nil
+}
+
+func (r *releaseRepository) Update(mr *models.ModuleRelease) error {
+	return r.db.Save(mr).Error
 }
 
 func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, error) {
@@ -71,6 +78,19 @@ func (r releaseRepository) GetModuleReleasesWithStatus(id uint, statusID uint) (
 	return results, nil
 }
 
+func (r releaseRepository) GetModuleReleaseWithStatus(id uint, releaseID uint, statusID uint) (*models.ModuleRelease, error) {
+	var result *models.ModuleRelease
+	err := r.db.Where("module_id = ? AND status_id = ? AND id = ?", id, statusID, releaseID).Find(result).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (r releaseRepository) DeleteModuleRelease(userID uint, id uint, releaseID uint) (bool, error) {
 	var result models.ModuleRelease
 	//need to check if the user issued the release
@@ -81,6 +101,18 @@ func (r releaseRepository) DeleteModuleRelease(userID uint, id uint, releaseID u
 	}
 	if res.RowsAffected == 0 {
 		return false, nil
+	}
+
+	return true, nil
+}
+
+func (r releaseRepository) CancelSuggestedModuleRelease(userID uint, id uint, releaseID uint) (bool, error) {
+	var result models.ModuleRelease
+	//need to check if the user issued the release
+	res := r.db.Where("module_id = ? AND id = ?", id, releaseID).First(&result)
+
+	if res.Error != nil {
+		return false, res.Error
 	}
 
 	return true, nil

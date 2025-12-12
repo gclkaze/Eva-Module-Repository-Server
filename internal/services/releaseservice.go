@@ -23,6 +23,32 @@ func (s *ReleaseService) DeleteModuleRelease(userID uint, id uint, releaseID uin
 	return s.repo.DeleteModuleRelease(userID, id, releaseID)
 }
 
+func (s *ReleaseService) CancelSuggestedModuleRelease(userID uint, id uint, releaseID uint) (bool, error) {
+
+	st, err := s.statusRepo.GetStatus(repositories.Accepted)
+	if err != nil {
+		return false, err
+	}
+
+	release, err := s.repo.GetModuleReleaseWithStatus(id, releaseID, st.ID)
+	if err != nil {
+		return false, err
+	}
+
+	st, err = s.statusRepo.GetStatus(repositories.Canceled)
+	if err != nil {
+		return false, err
+	}
+
+	release.Status = *st
+	release.StatusID = st.ID
+	err = s.repo.Update(release)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (s ReleaseService) moduleHasPendingRelease(modID uint) (bool, error) {
 	st, err := s.statusRepo.GetStatus(repositories.Pending)
 	if err != nil {
