@@ -41,7 +41,7 @@ func (h *ModuleHandler) FindByID(c *gin.Context) {
 
 func (h *ModuleHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
-
+	userID := c.GetUint("userId")
 	idUint, err := utils.StringToUint(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -50,7 +50,7 @@ func (h *ModuleHandler) Delete(c *gin.Context) {
 		})
 		return
 	}
-	res, err := h.service.Delete(idUint)
+	res, err := h.service.Delete(userID, idUint)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return

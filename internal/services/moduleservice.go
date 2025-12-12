@@ -281,8 +281,20 @@ func (s *ModuleService) GetModule(id uint) (*models.Module, error) {
 	return result, nil
 }
 
-func (s *ModuleService) Delete(id uint) (bool, error) {
-	return s.repo.Delete(id)
+func (s *ModuleService) Delete(userID uint, modID uint) (bool, error) {
+	mod, err := s.GetModule(modID)
+	if err != nil {
+		return false, err
+	}
+
+	if mod.Owner.EntityID != userID {
+		return false, fmt.Errorf("user with ID %d didn't match with the module", userID)
+	}
+
+	if mod.Owner.Type.Label != models.Dev.String() {
+		return false, fmt.Errorf("user with ID %d didn't match with the module type", userID)
+	}
+	return s.repo.Delete(modID)
 }
 
 func (s *ModuleService) SearchByKeywords(tags []string) ([]dto.ModuleDTO, error) {

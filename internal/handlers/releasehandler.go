@@ -20,6 +20,7 @@ func NewReleaseHandler(service *services.ReleaseService) *ReleaseHandler {
 
 func (h *ReleaseHandler) DeleteModuleRelease(c *gin.Context) {
 	id := c.Param("id")
+	userID := c.GetUint("userId")
 
 	idUint, err := utils.StringToUint(id)
 	if err != nil {
@@ -38,7 +39,7 @@ func (h *ReleaseHandler) DeleteModuleRelease(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.DeleteModuleRelease(idUint, releaseIDUint)
+	result, err := h.service.DeleteModuleRelease(userID, idUint, releaseIDUint)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
