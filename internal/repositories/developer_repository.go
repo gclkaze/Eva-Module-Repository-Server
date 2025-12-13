@@ -10,6 +10,7 @@ import (
 type DeveloperRepository interface {
 	Create(k *models.Developer) error
 	FindByID(id uint) (*models.Developer, error)
+	FindByUserAccountID(id uint) (*models.Developer, error)
 	Delete(id uint) (bool, error)
 	Ban(id uint) (bool, error)
 }
@@ -25,6 +26,18 @@ func NewDeveloperRepository(db *gorm.DB) DeveloperRepository {
 func (d *developerRepository) Create(dev *models.Developer) error {
 	err := d.db.Create(dev).Error
 	return err
+}
+
+func (d *developerRepository) FindByUserAccountID(id uint) (*models.Developer, error) {
+	var m models.Developer
+	err := d.db.Where("user_id = ?", id).First(&m).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &m, nil
 }
 
 func (d *developerRepository) FindByID(id uint) (*models.Developer, error) {

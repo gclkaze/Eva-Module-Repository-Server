@@ -7,6 +7,7 @@ import (
 	"github.com/gclkaze/evamodulerepositoryserver/internal/config"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/handlers"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/middleware"
+	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,6 +21,8 @@ type EvaModuleRepositoryRouter struct {
 	downloadHandler *handlers.DownloadHandler
 	releaseHandler  *handlers.ReleaseHandler
 	authHandler     *handlers.AuthHandler
+
+	middleWare *middleware.AuthMiddleWare
 }
 
 func NewEvaModuleRepositoryRouter() *EvaModuleRepositoryRouter {
@@ -34,6 +37,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 	router.releaseHandler = handlers.NewReleaseHandler(be.GetReleaseService())
 	router.authHandler = handlers.NewAuthHandler(be.GetAuthService(), be.GetDeveloperService())
 	router.downloadHandler = handlers.NewDownloadHandler(be.GetModuleService())
+	router.middleWare = middleware.NewAuthMiddleware(be.GetDeveloperService())
 
 	r.MaxMultipartMemory = 8 << 20 // 8 MB
 
@@ -48,10 +52,31 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 	{
 		modules.GET("/:id", router.moduleHandler.FindByID) // GET /api/modules/:id
 		modules.GET("/search", router.moduleHandler.SearchModulesByTags)
-		modules.GET("/:id/delete", middleware.AuthMiddleware(be.GetJWTSecret()), router.moduleHandler.Delete) //needs userID to be passed
-		modules.POST("/upload", middleware.AuthMiddleware(be.GetJWTSecret()), router.moduleHandler.Upload)
-		modules.POST("/update", middleware.AuthMiddleware(be.GetJWTSecret()), router.moduleHandler.Update)
-		modules.POST("/suggest", middleware.AuthMiddleware(be.GetJWTSecret()), router.moduleHandler.SuggestRelease)
+
+		modules.GET("/:id/delete",
+			router.middleWare.AuthMiddleware(be.GetJWTSecret()),
+			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+				models.DeleteMyModule,
+				models.CreateModule,
+			})),
+			router.moduleHandler.Delete) //needs userID to be passed
+
+		modules.POST("/upload", router.middleWare.AuthMiddleware(be.GetJWTSecret()),
+			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+				models.DeleteMyModule,
+				models.CreateModule,
+			})), router.moduleHandler.Upload)
+		modules.POST("/update", router.middleWare.AuthMiddleware(be.GetJWTSecret()),
+			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+				models.DeleteMyModule,
+				models.CreateModule,
+			})), router.moduleHandler.Update)
+		modules.POST("/suggest", router.middleWare.AuthMiddleware(be.GetJWTSecret()),
+			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+				models.DeleteMyModule,
+				models.CreateModule,
+				models.SuggestMyModule,
+			})), router.moduleHandler.SuggestRelease)
 	}
 
 	releases := router.api.Group("releases")
@@ -59,8 +84,20 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 		releases.GET("/:id", router.releaseHandler.GetModuleReleases)                   // GET /api/releases/:id
 		releases.GET("/:id/release/:releaseId", router.releaseHandler.GetModuleRelease) // GET /api/releases/:id/release/:releaseId
 		releases.GET("/:id/search", router.releaseHandler.SearchByKeywords)
-		releases.POST("/:id/delete/:releaseId", middleware.AuthMiddleware(be.GetJWTSecret()), router.releaseHandler.DeleteModuleRelease) // GET /api/releases/:id/delete/:releaseId
-		releases.POST("/:id/cancel/:releaseId", middleware.AuthMiddleware(be.GetJWTSecret()), router.releaseHandler.CancelSuggestedRelease)
+
+		releases.POST("/:id/delete/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()),
+			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+				models.DeleteMyModule,
+				models.CreateModule,
+				models.SuggestMyModule,
+			})), router.releaseHandler.DeleteModuleRelease) // GET /api/releases/:id/delete/:releaseId  ->need to check the userID is the one that initiated it
+
+		releases.POST("/:id/cancel/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()),
+			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+				models.DeleteMyModule,
+				models.CreateModule,
+				models.SuggestMyModule,
+			})), router.releaseHandler.CancelSuggestedRelease) // ->need to check the userID is the one that initiated it
 	}
 
 	download := router.api.Group("download")
@@ -71,9 +108,18 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 	supervision := router.api.Group("supervise")
 	{
 		supervision.GET("/download/release/:id", router.downloadHandler.DownloadAnyRelease)
-		supervision.GET("/reject/release/:id", router.releaseHandler.RejectRelease)
-		supervision.GET("/accept/release/:id", router.releaseHandler.AcceptRelease)
-		supervision.GET("/cancel/release/:id", router.releaseHandler.CancelRelease)
+
+		supervision.GET("/reject/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+			models.RejectRelease,
+		})), router.releaseHandler.RejectRelease)
+
+		supervision.GET("/accept/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+			models.AcceptRelease,
+		})), router.releaseHandler.AcceptRelease)
+
+		supervision.GET("/cancel/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+			models.CancelRelease,
+		})), router.releaseHandler.CancelRelease)
 	}
 
 	if config.TheConfigReader.IsOnError() {

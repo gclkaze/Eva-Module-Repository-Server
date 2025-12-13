@@ -26,6 +26,14 @@ func NewUserService(repo repositories.DeveloperRepository, accountRepo repositor
 	return mod
 }
 
+func (s UserService) GetDevelopersUserAccount(d *models.Developer) (*models.UserAccount, error) {
+	r, err := s.repo.FindByUserAccountID(d.UserID)
+	if err != nil {
+		return nil, err
+	}
+	return &r.UserAccount, nil
+}
+
 func (s *UserService) Create(handle string, firstName string, lastName string, email string, password string, active bool, role *models.UserRole) (uint, error) {
 	var dev *models.Developer
 
@@ -79,6 +87,18 @@ func (s *UserService) FindByID(id uint) (*models.Developer, error) {
 
 func (s *UserService) FindUserByID(id uint) (*models.UserAccount, error) {
 	return s.accountRepo.FindByID(id)
+}
+
+func (s *UserService) GetUserPermissions(id uint) ([]models.UserPermission, error) {
+	user, err := s.accountRepo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	role, err := s.roleRepo.FindByID(user.RoleID)
+	if role != nil {
+		return nil, err
+	}
+	return role.Permissions, nil
 }
 
 func (s *UserService) Initialize() error {

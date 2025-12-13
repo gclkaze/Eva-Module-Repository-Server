@@ -20,7 +20,7 @@ type ReleaseRepository interface {
 	GetModuleReleases(id uint) ([]models.ModuleRelease, error)
 	SearchModuleReleasesByTags(id uint, tags []string) ([]models.ModuleRelease, error)
 	GetModuleReleasesWithStatus(id uint, statusID uint) ([]models.ModuleRelease, error)
-	GetModuleReleaseWithStatus(id uint, releaseID uint, statusID uint) (*models.ModuleRelease, error)
+	GetModuleReleaseWithStatus(modID uint, releaseID uint, statusID uint) (*models.ModuleRelease, error)
 }
 
 type releaseRepository struct {
@@ -80,7 +80,7 @@ func (r releaseRepository) GetModuleReleasesWithStatus(id uint, statusID uint) (
 
 func (r releaseRepository) GetModuleReleaseWithStatus(id uint, releaseID uint, statusID uint) (*models.ModuleRelease, error) {
 	var result *models.ModuleRelease
-	err := r.db.Where("module_id = ? AND status_id = ? AND id = ?", id, statusID, releaseID).Find(result).Error
+	err := r.db.Preload("Creator").Where("module_id = ? AND status_id = ? AND id = ?", id, statusID, releaseID).Find(result).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

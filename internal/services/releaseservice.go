@@ -9,30 +9,39 @@ import (
 )
 
 type ReleaseService struct {
-	repo       repositories.ReleaseRepository
-	statusRepo repositories.ReleaseStatusRepository
-
+	repo             repositories.ReleaseRepository
+	statusRepo       repositories.ReleaseStatusRepository
+	userService      *UserService
 	ownershipService *ModuleOwnershipService
 }
 
-func NewReleaseService(repo repositories.ReleaseRepository, statusRepo repositories.ReleaseStatusRepository, ownershipService *ModuleOwnershipService) *ReleaseService {
-	return &ReleaseService{repo: repo, statusRepo: statusRepo, ownershipService: ownershipService}
+func NewReleaseService(repo repositories.ReleaseRepository, statusRepo repositories.ReleaseStatusRepository, ownershipService *ModuleOwnershipService, u *UserService) *ReleaseService {
+	return &ReleaseService{repo: repo, statusRepo: statusRepo, ownershipService: ownershipService, userService: u}
 }
 
 func (s *ReleaseService) DeleteModuleRelease(userID uint, id uint, releaseID uint) (bool, error) {
 	return s.repo.DeleteModuleRelease(userID, id, releaseID)
 }
 
-func (s *ReleaseService) CancelSuggestedModuleRelease(userID uint, id uint, releaseID uint) (bool, error) {
+func (s *ReleaseService) CancelSuggestedModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
 
 	st, err := s.statusRepo.GetStatus(repositories.Accepted)
 	if err != nil {
 		return false, err
 	}
 
-	release, err := s.repo.GetModuleReleaseWithStatus(id, releaseID, st.ID)
+	release, err := s.repo.GetModuleReleaseWithStatus(modID, releaseID, st.ID)
 	if err != nil {
 		return false, err
+	}
+
+	//lets check if the user is the one suggested it
+	acc, err := s.userService.GetDevelopersUserAccount(&release.Creator)
+	if err != nil {
+		return false, err
+	}
+	if acc.ID != userID {
+		return false, fmt.Errorf("Only initiator can cancel the release")
 	}
 
 	st, err = s.statusRepo.GetStatus(repositories.Canceled)
@@ -86,7 +95,14 @@ func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Modul
 	if err != nil {
 		return 0, err
 	}
-	newRelease := models.NewModuleReleaseFromModule(mod, version, *st, sz)
+
+	dmo, err := s.ownershipService.FindDeveloperModuleOwner(&mod.Owner)
+	if err != nil {
+		return 0, err
+	}
+
+	dev := dmo.Developer
+	newRelease := models.NewModuleReleaseFromModule(mod, version, *st, sz, dev)
 	s.repo.Create(newRelease)
 	//res, err = s.userHasPendingRelease(devID)
 	return newRelease.ID, nil

@@ -9,14 +9,6 @@ type ModuleOwnershipService struct {
 	moduleOwnerRepo     repositories.ModuleOwnerRepository
 	moduleOwnerTypeRepo repositories.ModuleOwnerTypesRepository
 	devModuleOwnerRepo  repositories.DeveloperModuleOwnerRepository
-	/*	repo repositories.ModuleRepository
-
-		moduleFolder  string
-		releaseFolder string
-
-		logger logger.ILogger
-
-		developerService *DeveloperService*/
 }
 
 func NewModuleOwnershipService(moduleOwnerRepo repositories.ModuleOwnerRepository,

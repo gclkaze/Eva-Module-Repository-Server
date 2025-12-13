@@ -9,6 +9,7 @@ const (
 	SuggestModule
 	DeleteModule
 	DeleteMyModule
+	SuggestMyModule
 	DeleteRelease
 	DeleteMyRelease
 	UpdateRelease
@@ -26,6 +27,7 @@ func GetUserPermissionTypes() []UserPermissionTypeDef {
 		SuggestModule,
 		DeleteModule,
 		DeleteMyModule,
+		SuggestMyModule,
 		DeleteRelease,
 		DeleteMyRelease,
 		UpdateRelease,
@@ -43,6 +45,7 @@ func (r UserPermissionTypeDef) String() string {
 		"SuggestModule",
 		"DeleteModule",
 		"DeleteMyModule",
+		"SuggestMyModule",
 		"DeleteRelease",
 		"DeleteMyRelease",
 		"UpdateRelease",

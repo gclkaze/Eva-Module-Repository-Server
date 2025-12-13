@@ -229,32 +229,6 @@ func (s *ModuleService) SuggestUserModuleRelease(userID uint, modID uint, versio
 		return 0, fmt.Errorf("the module size is 0. Cannot proceed with the release")
 	}
 	s.releaseService.SuggestUserModuleRelease(userID, mod, version, diskSize)
-
-	/*	mod.Update(title, repr, descr, keywords)
-		err = s.repo.Update(mod)
-
-		if err != nil {
-			return 0, err
-		}
-
-		dmo, err := s.ownershipService.FindDeveloperModuleOwner(&mod.Owner)
-		if err != nil {
-			return 0, err
-		}
-		modPath := s.GetModulePath(dmo, mod)
-		if !utils.FolderExists(modPath) {
-			utils.CreateFolder(modPath)
-		} else {
-			utils.CleanFolder(modPath)
-		}*/
-
-	/*	modPath = fmt.Sprintf("%s/%s", modPath, file.Filename)
-		if err := c.SaveUploadedFile(file, modPath); err != nil {
-			s.logger.Errorf("module_service", "%s", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-			return 0, err
-		}
-	*/
 	return mod.ID, nil
 }
 

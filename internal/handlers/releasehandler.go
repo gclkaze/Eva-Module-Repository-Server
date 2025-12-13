@@ -61,10 +61,10 @@ func (h *ReleaseHandler) DeleteModuleRelease(c *gin.Context) {
 }
 
 func (h *ReleaseHandler) CancelSuggestedRelease(c *gin.Context) {
-	id := c.Param("id")
+	modID := c.Param("id")
 	userID := c.GetUint("userId")
 
-	idUint, err := utils.StringToUint(id)
+	modIDUint, err := utils.StringToUint(modID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid ID format",
@@ -81,7 +81,7 @@ func (h *ReleaseHandler) CancelSuggestedRelease(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.CancelSuggestedModuleRelease(userID, idUint, releaseIDUint)
+	result, err := h.service.CancelSuggestedModuleRelease(userID, modIDUint, releaseIDUint)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
