@@ -101,6 +101,20 @@ func (s *UserService) GetUserPermissions(id uint) ([]models.UserPermission, erro
 	return role.Permissions, nil
 }
 
+func (s UserService) UserHasPermission(id uint, perm models.UserPermissionTypeDef) bool {
+	ps, err := s.GetUserPermissions(id)
+	if err != nil {
+		return false
+	}
+	for i := range ps {
+		if ps[i].Value == perm.String() {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (s *UserService) Initialize() error {
 	//need to check for initialization of the user permissions, user roles, and default test user accounts. 1 admin, 2 developer
 	err := s.permissionRepo.Initialize()
@@ -142,41 +156,41 @@ func (s *UserService) InitializeUserRolePermissions() error {
 func (s UserService) getRolePermissions(t models.UserRoleTypeDef) []models.UserPermission {
 	m := map[models.UserRoleTypeDef][]models.UserPermission{
 		models.Admin: {
-			{Value: models.CreateModule.String()},
-			{Value: models.SuggestModule.String()},
-			{Value: models.DeleteModule.String()},
+			{Value: models.CreateMyModule.String()},
+			{Value: models.SuggestMyModule.String()},
+			{Value: models.DeleteModules.String()},
 			{Value: models.DeleteMyModule.String()},
-			{Value: models.DeleteRelease.String()},
+			{Value: models.DeleteReleases.String()},
 			{Value: models.DeleteMyRelease.String()},
-			{Value: models.UpdateRelease.String()},
-			{Value: models.ChangeReleaseStatus.String()},
-			{Value: models.RejectRelease.String()},
-			{Value: models.AcceptRelease.String()},
-			{Value: models.CancelRelease.String()},
-			{Value: models.BanUser.String()},
-			{Value: models.UnbanUser.String()},
+			{Value: models.UpdateReleases.String()},
+			{Value: models.ChangeReleaseStatuses.String()},
+			{Value: models.RejectReleases.String()},
+			{Value: models.AcceptReleases.String()},
+			{Value: models.CancelReleases.String()},
+			{Value: models.BanUsers.String()},
+			{Value: models.UnbanUsers.String()},
 		},
 		models.Maintainer: {
-			{Value: models.CreateModule.String()},
-			{Value: models.SuggestModule.String()},
-			{Value: models.DeleteModule.String()},
+			{Value: models.CreateMyModule.String()},
+			{Value: models.SuggestMyModule.String()},
+			{Value: models.DeleteModules.String()},
 			{Value: models.DeleteMyModule.String()},
-			{Value: models.DeleteRelease.String()},
+			{Value: models.DeleteReleases.String()},
 			{Value: models.DeleteMyRelease.String()},
-			{Value: models.UpdateRelease.String()},
-			{Value: models.ChangeReleaseStatus.String()},
-			{Value: models.RejectRelease.String()},
-			{Value: models.AcceptRelease.String()},
-			{Value: models.CancelRelease.String()},
+			{Value: models.UpdateReleases.String()},
+			{Value: models.ChangeReleaseStatuses.String()},
+			{Value: models.RejectReleases.String()},
+			{Value: models.AcceptReleases.String()},
+			{Value: models.CancelReleases.String()},
 		},
 		models.User: {
-			{Value: models.CreateModule.String()},
-			{Value: models.SuggestModule.String()},
-			{Value: models.DeleteModule.String()},
+			{Value: models.CreateMyModule.String()},
+			{Value: models.SuggestMyModule.String()},
+			{Value: models.DeleteModules.String()},
 			{Value: models.DeleteMyModule.String()},
-			{Value: models.DeleteRelease.String()},
+			{Value: models.DeleteReleases.String()},
 			{Value: models.DeleteMyRelease.String()},
-			{Value: models.UnbanUser.String()},
+			{Value: models.UnbanUsers.String()},
 		},
 	}
 

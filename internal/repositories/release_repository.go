@@ -91,6 +91,19 @@ func (r releaseRepository) GetModuleReleaseWithStatus(id uint, releaseID uint, s
 	return result, nil
 }
 
+func (r releaseRepository) GetModuleRelease(id uint, releaseID uint) (*models.ModuleRelease, error) {
+	var result *models.ModuleRelease
+	err := r.db.Preload("Creator").Where("module_id = ? AND id = ?", id, releaseID).Find(result).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (r releaseRepository) DeleteModuleRelease(userID uint, id uint, releaseID uint) (bool, error) {
 	var result models.ModuleRelease
 	//need to check if the user issued the release
@@ -116,19 +129,6 @@ func (r releaseRepository) CancelSuggestedModuleRelease(userID uint, id uint, re
 	}
 
 	return true, nil
-}
-
-func (r releaseRepository) GetModuleRelease(id uint, releaseID uint) (*models.ModuleRelease, error) {
-	var result models.ModuleRelease
-	err := r.db.Where("module_id = ? AND id = ?", id, releaseID).First(&result).Error
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, nil
 }
 
 func (r releaseRepository) SearchModuleReleasesByTags(id uint, tags []string) ([]models.ModuleRelease, error) {

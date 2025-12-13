@@ -19,15 +19,83 @@ func NewReleaseHandler(service *services.ReleaseService) *ReleaseHandler {
 }
 
 func (h *ReleaseHandler) RejectRelease(c *gin.Context) {
+	userID := c.GetUint("userId")
+	releaseID := c.Param("releaseId")
+	releaseIDUint, err := utils.StringToUint(releaseID)
 
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid Release ID format",
+		})
+		return
+	}
+
+	result, err := h.service.RejectModuleRelease(userID, releaseIDUint)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, result)
 }
 
 func (h *ReleaseHandler) AcceptRelease(c *gin.Context) {
+	userID := c.GetUint("userId")
+	releaseID := c.Param("releaseId")
+	releaseIDUint, err := utils.StringToUint(releaseID)
 
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid Release ID format",
+		})
+		return
+	}
+
+	result, err := h.service.AcceptModuleRelease(userID, releaseIDUint)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, result)
 }
 
 func (h *ReleaseHandler) CancelRelease(c *gin.Context) {
+	userID := c.GetUint("userId")
+	releaseID := c.Param("releaseId")
+	releaseIDUint, err := utils.StringToUint(releaseID)
 
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid Release ID format",
+		})
+		return
+	}
+
+	result, err := h.service.CancelModuleRelease(userID, releaseIDUint)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, result)
+}
+
+func (h *ReleaseHandler) ChangeToPendingRelease(c *gin.Context) {
+	userID := c.GetUint("userId")
+	releaseID := c.Param("releaseId")
+	releaseIDUint, err := utils.StringToUint(releaseID)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid Release ID format",
+		})
+		return
+	}
+
+	result, err := h.service.ChangeToPendingModuleRelease(userID, releaseIDUint)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, result)
 }
 
 func (h *ReleaseHandler) DeleteModuleRelease(c *gin.Context) {

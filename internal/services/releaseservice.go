@@ -19,8 +19,28 @@ func NewReleaseService(repo repositories.ReleaseRepository, statusRepo repositor
 	return &ReleaseService{repo: repo, statusRepo: statusRepo, ownershipService: ownershipService, userService: u}
 }
 
-func (s *ReleaseService) DeleteModuleRelease(userID uint, id uint, releaseID uint) (bool, error) {
-	return s.repo.DeleteModuleRelease(userID, id, releaseID)
+func (s *ReleaseService) GetUserService() *UserService {
+	return s.userService
+}
+
+func (s *ReleaseService) DeleteModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
+	if s.userService.UserHasPermission(userID, models.DeleteModules) {
+		return s.repo.DeleteModuleRelease(userID, modID, releaseID)
+	}
+
+	release, err := s.repo.GetModuleRelease(modID, releaseID)
+	if err != nil {
+		return false, err
+	}
+	acc, err := s.userService.GetDevelopersUserAccount(&release.Creator)
+	if err != nil {
+		return false, err
+	}
+	if acc.ID != userID {
+		return false, fmt.Errorf("only initiator can delete the release")
+	}
+
+	return s.repo.DeleteModuleRelease(userID, modID, releaseID)
 }
 
 func (s *ReleaseService) CancelSuggestedModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
@@ -36,12 +56,14 @@ func (s *ReleaseService) CancelSuggestedModuleRelease(userID uint, modID uint, r
 	}
 
 	//lets check if the user is the one suggested it
-	acc, err := s.userService.GetDevelopersUserAccount(&release.Creator)
-	if err != nil {
-		return false, err
-	}
-	if acc.ID != userID {
-		return false, fmt.Errorf("Only initiator can cancel the release")
+	if !s.userService.UserHasPermission(userID, models.CancelReleases) {
+		acc, er := s.userService.GetDevelopersUserAccount(&release.Creator)
+		if er != nil {
+			return false, er
+		}
+		if acc.ID != userID {
+			return false, fmt.Errorf("only initiator can cancel the release")
+		}
 	}
 
 	st, err = s.statusRepo.GetStatus(repositories.Canceled)
@@ -148,6 +170,96 @@ func (s *ReleaseService) SearchByKeywords(id uint, tags []string) ([]dto.Release
 		dtos = append(dtos, *dto.NewReleaseDTO(results[i]))
 	}
 	return dtos, error
+}
+
+func (s *ReleaseService) AcceptModuleRelease(userID uint, releaseID uint) (uint, error) {
+	rel, err := s.repo.FindByID(releaseID)
+	if err != nil {
+		return 0, err
+	}
+	if rel.Status.Label == repositories.Accepted.String() {
+		return 0, fmt.Errorf("the release is already accepted")
+	}
+
+	st, err := s.statusRepo.GetStatus(repositories.Accepted)
+	if err != nil {
+		return 0, err
+	}
+
+	rel.Status = *st
+	rel.StatusID = st.ID
+	err = s.repo.Update(rel)
+	if err != nil {
+		return 0, err
+	}
+	return releaseID, nil
+}
+
+func (s *ReleaseService) RejectModuleRelease(userID uint, releaseID uint) (uint, error) {
+	rel, err := s.repo.FindByID(releaseID)
+	if err != nil {
+		return 0, err
+	}
+	if rel.Status.Label == repositories.Rejected.String() {
+		return 0, fmt.Errorf("the release is already rejected")
+	}
+
+	st, err := s.statusRepo.GetStatus(repositories.Rejected)
+	if err != nil {
+		return 0, err
+	}
+
+	rel.Status = *st
+	rel.StatusID = st.ID
+	err = s.repo.Update(rel)
+	if err != nil {
+		return 0, err
+	}
+	return releaseID, nil
+}
+
+func (s *ReleaseService) CancelModuleRelease(userID uint, releaseID uint) (uint, error) {
+	rel, err := s.repo.FindByID(releaseID)
+	if err != nil {
+		return 0, err
+	}
+	if rel.Status.Label == repositories.Canceled.String() {
+		return 0, fmt.Errorf("the release is already canceled")
+	}
+	st, err := s.statusRepo.GetStatus(repositories.Canceled)
+	if err != nil {
+		return 0, err
+	}
+
+	rel.Status = *st
+	rel.StatusID = st.ID
+	err = s.repo.Update(rel)
+	if err != nil {
+		return 0, err
+	}
+	return releaseID, nil
+}
+
+func (s *ReleaseService) ChangeToPendingModuleRelease(userID uint, releaseID uint) (uint, error) {
+	rel, err := s.repo.FindByID(releaseID)
+	if err != nil {
+		return 0, err
+	}
+	if rel.Status.Label == repositories.Pending.String() {
+		return 0, fmt.Errorf("the release is already pending")
+	}
+	st, err := s.statusRepo.GetStatus(repositories.Pending)
+	if err != nil {
+		return 0, err
+	}
+
+	rel.Status = *st
+	rel.StatusID = st.ID
+	err = s.repo.Update(rel)
+	if err != nil {
+		return 0, err
+	}
+	return releaseID, nil
 }
 
 func (s *ReleaseService) Initialize() {

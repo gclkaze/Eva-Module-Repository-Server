@@ -50,31 +50,37 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 
 	modules := router.api.Group("/modules")
 	{
+		//find a module based on id
 		modules.GET("/:id", router.moduleHandler.FindByID) // GET /api/modules/:id
 		modules.GET("/search", router.moduleHandler.SearchModulesByTags)
 
+		//delete a module!
 		modules.GET("/:id/delete",
 			router.middleWare.AuthMiddleware(be.GetJWTSecret()),
 			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 				models.DeleteMyModule,
-				models.CreateModule,
+				models.CreateMyModule,
+				models.DeleteModules,
 			})),
 			router.moduleHandler.Delete) //needs userID to be passed
 
 		modules.POST("/upload", router.middleWare.AuthMiddleware(be.GetJWTSecret()),
 			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 				models.DeleteMyModule,
-				models.CreateModule,
+				models.CreateMyModule,
 			})), router.moduleHandler.Upload)
+
 		modules.POST("/update", router.middleWare.AuthMiddleware(be.GetJWTSecret()),
 			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 				models.DeleteMyModule,
-				models.CreateModule,
+				models.CreateMyModule,
+				models.UpdateModules,
 			})), router.moduleHandler.Update)
+
 		modules.POST("/suggest", router.middleWare.AuthMiddleware(be.GetJWTSecret()),
 			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 				models.DeleteMyModule,
-				models.CreateModule,
+				models.CreateMyModule,
 				models.SuggestMyModule,
 			})), router.moduleHandler.SuggestRelease)
 	}
@@ -88,15 +94,17 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 		releases.POST("/:id/delete/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()),
 			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 				models.DeleteMyModule,
-				models.CreateModule,
+				models.CreateMyModule,
 				models.SuggestMyModule,
+				models.DeleteReleases,
 			})), router.releaseHandler.DeleteModuleRelease) // GET /api/releases/:id/delete/:releaseId  ->need to check the userID is the one that initiated it
 
 		releases.POST("/:id/cancel/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()),
 			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 				models.DeleteMyModule,
-				models.CreateModule,
+				models.CreateMyModule,
 				models.SuggestMyModule,
+				models.CancelReleases,
 			})), router.releaseHandler.CancelSuggestedRelease) // ->need to check the userID is the one that initiated it
 	}
 
@@ -110,16 +118,21 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 		supervision.GET("/download/release/:id", router.downloadHandler.DownloadAnyRelease)
 
 		supervision.GET("/reject/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
-			models.RejectRelease,
+			models.RejectReleases,
 		})), router.releaseHandler.RejectRelease)
 
 		supervision.GET("/accept/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
-			models.AcceptRelease,
+			models.AcceptReleases,
 		})), router.releaseHandler.AcceptRelease)
 
 		supervision.GET("/cancel/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
-			models.CancelRelease,
+			models.CancelReleases,
 		})), router.releaseHandler.CancelRelease)
+
+		supervision.GET("/pending/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+			models.CancelReleases,
+		})), router.releaseHandler.ChangeToPendingRelease)
+
 	}
 
 	if config.TheConfigReader.IsOnError() {

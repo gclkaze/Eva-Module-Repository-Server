@@ -145,12 +145,15 @@ func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, 
 		return 0, err
 	}
 
-	if mod.Owner.EntityID != userID {
-		return 0, fmt.Errorf("user with ID %d didn't match with the module", userID)
-	}
+	if !s.releaseService.userService.UserHasPermission(userID, models.UpdateModules) {
 
-	if mod.Owner.Type.Label != models.Dev.String() {
-		return 0, fmt.Errorf("user with ID %d didn't match with the module type", userID)
+		if mod.Owner.EntityID != userID {
+			return 0, fmt.Errorf("user with ID %d didn't match with the module", userID)
+		}
+
+		if mod.Owner.Type.Label != models.Dev.String() {
+			return 0, fmt.Errorf("user with ID %d didn't match with the module type", userID)
+		}
 	}
 
 	labels := strings.Split(tags, ",")
@@ -256,6 +259,10 @@ func (s *ModuleService) GetModule(id uint) (*models.Module, error) {
 }
 
 func (s *ModuleService) Delete(userID uint, modID uint) (bool, error) {
+
+	if s.releaseService.userService.UserHasPermission(userID, models.DeleteModules) {
+		return s.repo.Delete(modID)
+	}
 	mod, err := s.GetModule(modID)
 	if err != nil {
 		return false, err

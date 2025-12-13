@@ -5,56 +5,56 @@ import "gorm.io/gorm"
 type UserPermissionTypeDef int
 
 const (
-	CreateModule UserPermissionTypeDef = iota
-	SuggestModule
-	DeleteModule
+	CreateMyModule UserPermissionTypeDef = iota
+	DeleteModules
 	DeleteMyModule
 	SuggestMyModule
-	DeleteRelease
+	UpdateModules
+	DeleteReleases
 	DeleteMyRelease
-	UpdateRelease
-	ChangeReleaseStatus
-	RejectRelease
-	AcceptRelease
-	CancelRelease
-	BanUser
-	UnbanUser
+	UpdateReleases
+	ChangeReleaseStatuses
+	RejectReleases
+	AcceptReleases
+	CancelReleases
+	BanUsers
+	UnbanUsers
 )
 
 func GetUserPermissionTypes() []UserPermissionTypeDef {
 	return []UserPermissionTypeDef{
-		CreateModule,
-		SuggestModule,
-		DeleteModule,
+		CreateMyModule,
+		DeleteModules,
 		DeleteMyModule,
 		SuggestMyModule,
-		DeleteRelease,
+		UpdateModules,
+		DeleteReleases,
 		DeleteMyRelease,
-		UpdateRelease,
-		ChangeReleaseStatus,
-		RejectRelease,
-		AcceptRelease,
-		CancelRelease,
-		BanUser,
-		UnbanUser}
+		UpdateReleases,
+		ChangeReleaseStatuses,
+		RejectReleases,
+		AcceptReleases,
+		CancelReleases,
+		BanUsers,
+		UnbanUsers}
 }
 
 func (r UserPermissionTypeDef) String() string {
 	return [...]string{
-		"CreateModule",
-		"SuggestModule",
-		"DeleteModule",
+		"CreateMyModule",
+		"DeleteModules",
 		"DeleteMyModule",
 		"SuggestMyModule",
-		"DeleteRelease",
+		"UpdateModules",
+		"DeleteReleases",
 		"DeleteMyRelease",
-		"UpdateRelease",
-		"ChangeReleaseStatus",
-		"RejectRelease",
-		"AcceptRelease",
-		"CancelRelease",
-		"BanUser",
-		"UnbanUser"}[r]
+		"UpdateReleases",
+		"ChangeReleaseStatuses",
+		"RejectReleases",
+		"AcceptReleases",
+		"CancelReleases",
+		"BanUsers",
+		"UnbanUsers"}[r]
 }
 
 type UserPermission struct {
