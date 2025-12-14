@@ -3,6 +3,7 @@ package services
 import (
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/repositories"
+	"gorm.io/gorm"
 )
 
 type ModuleOwnershipService struct {
@@ -17,16 +18,28 @@ func NewModuleOwnershipService(moduleOwnerRepo repositories.ModuleOwnerRepositor
 	return &ModuleOwnershipService{moduleOwnerRepo: moduleOwnerRepo, moduleOwnerTypeRepo: moduleOwnerTypeRepo, devModuleOwnerRepo: devModuleOwnerRepo}
 }
 
-func (s *ModuleOwnershipService) CreateModuleOwner(t models.ModuleOwnerTypeDef, entityId uint) (*models.ModuleOwner, error) {
+func (s *ModuleOwnershipService) CreateModuleOwner(t models.ModuleOwnerTypeDef, entityID uint) (*models.ModuleOwner, error) {
 	typ, err := s.moduleOwnerTypeRepo.FindByLabel(t.String())
 	if err != nil {
 		return nil, err
 	}
-	return s.moduleOwnerRepo.Create(typ, entityId)
+	return s.moduleOwnerRepo.Create(typ, entityID)
+}
+
+func (s *ModuleOwnershipService) CreateModuleOwnerTx(tx *gorm.DB, t models.ModuleOwnerTypeDef, entityID uint) (*models.ModuleOwner, error) {
+	typ, err := s.moduleOwnerTypeRepo.FindByLabelTx(tx, t.String())
+	if err != nil {
+		return nil, err
+	}
+	return s.moduleOwnerRepo.Create(typ, entityID)
 }
 
 func (s *ModuleOwnershipService) CreateDeveloperModuleOwner(d *models.Developer, mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error) {
 	return s.devModuleOwnerRepo.Create(d, mo)
+}
+
+func (s *ModuleOwnershipService) CreateDeveloperModuleOwnerTx(tx *gorm.DB, d *models.Developer, mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error) {
+	return s.devModuleOwnerRepo.CreateTx(tx, d, mo)
 }
 
 func (s ModuleOwnershipService) FindDeveloperModuleOwner(mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error) {

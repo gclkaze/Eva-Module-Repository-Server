@@ -9,8 +9,10 @@ import (
 
 type KeywordRepository interface {
 	Create(k *models.Keyword) error
+	CreateTx(tx *gorm.DB, k *models.Keyword) error
 	FindByID(id int64) (*models.Keyword, error)
 	FindByLabel(label string) (*models.Keyword, error)
+	FindByLabelTx(tx *gorm.DB, label string) (*models.Keyword, error)
 	FindAll() ([]models.Keyword, error)
 	Delete(id int64) error
 }
@@ -28,6 +30,10 @@ func (r *keywordRepository) Create(k *models.Keyword) error {
 	return r.db.Create(k).Error
 }
 
+func (r *keywordRepository) CreateTx(tx *gorm.DB, k *models.Keyword) error {
+	return tx.Create(k).Error
+}
+
 // Find by ID
 func (r *keywordRepository) FindByID(id int64) (*models.Keyword, error) {
 	var k models.Keyword
@@ -42,6 +48,15 @@ func (r *keywordRepository) FindByID(id int64) (*models.Keyword, error) {
 func (r *keywordRepository) FindByLabel(label string) (*models.Keyword, error) {
 	var k models.Keyword
 	err := r.db.Where("label = ?", label).First(&k).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return &k, err
+}
+
+func (r *keywordRepository) FindByLabelTx(tx *gorm.DB, label string) (*models.Keyword, error) {
+	var k models.Keyword
+	err := tx.Where("label = ?", label).First(&k).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

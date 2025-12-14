@@ -79,7 +79,7 @@ func (h *ModuleHandler) Upload(c *gin.Context) {
 	}
 
 	// Call service to create module
-	id, err := h.service.CreateModule(userID, title, description, repr, file, tags, c)
+	id, err := h.service.CreateModuleTx(userID, title, description, repr, file, tags, c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

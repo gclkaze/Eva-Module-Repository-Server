@@ -12,10 +12,12 @@ import (
 
 type ModuleRepository interface {
 	Create(dev *models.Module) error
+	CreateTx(tx *gorm.DB, dev *models.Module) error
 	Update(mod *models.Module) error
 	FindByID(id uint, preload bool) (*models.Module, error)
 	SearchByKeywords(tags []string) ([]models.Module, error)
 	Delete(id uint) (bool, error)
+	GetDB() *gorm.DB
 }
 
 type moduleRepository struct {
@@ -26,8 +28,15 @@ func NewModuleRepository(db *gorm.DB) ModuleRepository {
 	return &moduleRepository{db: db}
 }
 
+func (r *moduleRepository) GetDB() *gorm.DB {
+	return r.db
+}
 func (r *moduleRepository) Create(mod *models.Module) error {
 	return r.db.Create(mod).Error
+}
+
+func (r *moduleRepository) CreateTx(tx *gorm.DB, mod *models.Module) error {
+	return tx.Create(mod).Error
 }
 
 func (r moduleRepository) FindByID(id uint, preload bool) (*models.Module, error) {

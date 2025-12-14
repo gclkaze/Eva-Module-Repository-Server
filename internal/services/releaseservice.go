@@ -98,11 +98,6 @@ func (s ReleaseService) userHasPendingRelease(userID uint) (bool, error) {
 }
 
 func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Module, version string, sz int64) (uint, error) {
-	/*dmo, err := s.ownershipService.FindDeveloperModuleOwner(&mod.Owner)
-	if err != nil {
-		return 0, err
-	}*/
-	//devID := dmo.DeveloperID
 	modID := mod.ID
 
 	res, err := s.moduleHasPendingRelease(modID)

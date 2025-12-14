@@ -7,6 +7,7 @@ import (
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/runtime"
 	"github.com/magiconair/properties"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type UserService struct {
@@ -83,6 +84,10 @@ func (s *UserService) CreateUser(handle string, firstName string, lastName strin
 
 func (s *UserService) FindByID(id uint) (*models.Developer, error) {
 	return s.repo.FindByID(id)
+}
+
+func (s *UserService) FindByIDTx(tx *gorm.DB, id uint) (*models.Developer, error) {
+	return s.repo.FindByIDTx(tx, id)
 }
 
 func (s *UserService) FindUserByID(id uint) (*models.UserAccount, error) {

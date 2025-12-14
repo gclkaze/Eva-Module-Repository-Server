@@ -9,6 +9,7 @@ import (
 
 type DeveloperModuleOwnerRepository interface {
 	Create(d *models.Developer, mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error)
+	CreateTx(tx *gorm.DB, d *models.Developer, mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error)
 	FindByDevAndModOwner(mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error)
 }
 
@@ -23,6 +24,12 @@ func NewDeveloperModuleOwnerRepository(db *gorm.DB) DeveloperModuleOwnerReposito
 func (m *developerModuleOwnerRepository) Create(d *models.Developer, mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error) {
 	dmo := models.NewDeveloperModuleOwner(*d, *mo)
 	m.db.Create(dmo)
+	return dmo, nil
+}
+
+func (m *developerModuleOwnerRepository) CreateTx(tx *gorm.DB, d *models.Developer, mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error) {
+	dmo := models.NewDeveloperModuleOwner(*d, *mo)
+	tx.Create(dmo)
 	return dmo, nil
 }
 

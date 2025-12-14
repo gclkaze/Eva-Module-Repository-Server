@@ -13,6 +13,7 @@ type DeveloperRepository interface {
 	FindByUserAccountID(id uint) (*models.Developer, error)
 	Delete(id uint) (bool, error)
 	Ban(id uint) (bool, error)
+	FindByIDTx(tx *gorm.DB, id uint) (*models.Developer, error)
 }
 
 type developerRepository struct {
@@ -26,6 +27,18 @@ func NewDeveloperRepository(db *gorm.DB) DeveloperRepository {
 func (d *developerRepository) Create(dev *models.Developer) error {
 	err := d.db.Create(dev).Error
 	return err
+}
+
+func (d *developerRepository) FindByIDTx(tx *gorm.DB, id uint) (*models.Developer, error) {
+	var dev models.Developer
+	err := tx.First(&dev, 1).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &dev, nil
 }
 
 func (d *developerRepository) FindByUserAccountID(id uint) (*models.Developer, error) {

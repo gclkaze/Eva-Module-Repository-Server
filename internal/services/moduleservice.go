@@ -16,6 +16,7 @@ import (
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/magiconair/properties"
+	"gorm.io/gorm"
 )
 
 type ModuleService struct {
@@ -139,6 +140,99 @@ func (s *ModuleService) CreateModule(userID uint, title string, descr string, re
 	return mod.ID, nil
 }
 
+func (s *ModuleService) CreateModuleTx(
+	userID uint,
+	title string,
+	descr string,
+	repr string,
+	file *multipart.FileHeader,
+	tags string,
+	c *gin.Context,
+) (uint, error) {
+
+	if file == nil {
+		return 0, fmt.Errorf("no module file was provided")
+	}
+
+	title = strings.TrimSpace(title)
+	if title == "" {
+		return 0, fmt.Errorf("the module title cannot be empty")
+	}
+
+	var (
+		mod     *models.Module
+		dev     *models.Developer
+		owner   *models.ModuleOwner
+		dmo     *models.DeveloperModuleOwner
+		modPath string
+	)
+
+	db := s.repo.GetDB()
+	err := utils.WithGormTransaction(db, func(tx *gorm.DB) error {
+
+		var err error
+
+		dev, err = s.developerService.FindByIDTx(tx, userID)
+		if err != nil {
+			return err
+		}
+
+		owner, err = s.ownershipService.CreateModuleOwnerTx(tx, models.Dev, dev.ID)
+		if err != nil {
+			return err
+		}
+
+		dmo, err = s.ownershipService.CreateDeveloperModuleOwnerTx(tx, dev, owner)
+		if err != nil {
+			return err
+		}
+
+		labels := strings.Split(tags, ",")
+		keywords, err := s.CreateAndGetKeywordsTx(tx, labels)
+		if err != nil {
+			return err
+		}
+
+		mod = models.NewModule(title, repr, descr, owner.ID, *owner, keywords)
+
+		if err := s.repo.CreateTx(tx, mod); err != nil {
+			return err
+		}
+
+		// prepare path, but DO NOT create folders yet
+		modPath = s.GetModulePath(dmo, mod)
+
+		if utils.FolderExists(modPath) {
+			return fmt.Errorf("module path exists %s", modPath)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	devPath := s.GetDevPath(dev)
+	if !utils.FolderExists(devPath) {
+		if err := utils.CreateFolder(devPath); err != nil {
+			return 0, err
+		}
+	}
+
+	if err := utils.CreateFolder(modPath); err != nil {
+		return 0, err
+	}
+
+	filePath := fmt.Sprintf("%s/%s", modPath, file.Filename)
+	if err := c.SaveUploadedFile(file, filePath); err != nil {
+		s.logger.Errorf("module_service", "%s", err)
+		return 0, err
+	}
+
+	return mod.ID, nil
+}
+
 func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, descr string, repr string, file *multipart.FileHeader, tags string, c *gin.Context) (uint, error) {
 	mod, err := s.GetModule(modID)
 	if err != nil {
@@ -231,8 +325,12 @@ func (s *ModuleService) SuggestUserModuleRelease(userID uint, modID uint, versio
 	if diskSize == 0 {
 		return 0, fmt.Errorf("the module size is 0. Cannot proceed with the release")
 	}
-	s.releaseService.SuggestUserModuleRelease(userID, mod, version, diskSize)
-	return mod.ID, nil
+
+	if !utils.IsValidVersion(version) {
+		return 0, fmt.Errorf("invalid version suggested version string %s", version)
+	}
+
+	return s.releaseService.SuggestUserModuleRelease(userID, mod, version, diskSize)
 }
 
 func (s *ModuleService) FindByID(id uint) (*dto.ModuleDTO, error) {
@@ -302,6 +400,24 @@ func (s *ModuleService) CreateAndGetKeywords(tags []string) ([]models.Keyword, e
 			//need to create it
 			k = models.NewKeyword(tag)
 			s.keyword.Create(k)
+		}
+		keywords = append(keywords, *k)
+	}
+	return keywords, nil
+}
+
+func (s *ModuleService) CreateAndGetKeywordsTx(tx *gorm.DB, tags []string) ([]models.Keyword, error) {
+	var keywords []models.Keyword
+	for i := 0; i < len(tags); i++ {
+		tag := tags[i]
+		k, err := s.keyword.FindByLabelTx(tx, tag)
+		if err != nil {
+			return nil, err
+		}
+		if k == nil {
+			//need to create it
+			k = models.NewKeyword(tag)
+			s.keyword.CreateTx(tx, k)
 		}
 		keywords = append(keywords, *k)
 	}

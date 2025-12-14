@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/mod/semver"
 )
 
 func StringToUint(str string) (uint, error) {
@@ -25,4 +26,8 @@ func UintToString(i uint) string {
 func HashPassword(pw string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
 	return string(bytes), err
+}
+
+func IsValidVersion(v string) bool {
+	return semver.IsValid("v" + v)
 }
