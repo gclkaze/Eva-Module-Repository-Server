@@ -30,7 +30,7 @@ func NewAuthService(usersRepo repositories.UserAccountRepository,
 	auth := &AuthService{p: p}
 	auth.jwtSecret = p.GetString("jwt_secret", "")
 	auth.logger = runtime.CreateLogger(p)
-	auth.accessTokenTTL = p.GetDuration("access_token_ttl", 15) * time.Minute
+	auth.accessTokenTTL = p.GetDuration("access_token_ttl", 15) * time.Hour
 	auth.refreshTokenTTL = p.GetDuration("refresh_token_ttl", 7*24) * time.Hour
 	auth.usersRepo = usersRepo
 	auth.devRepo = devRepo

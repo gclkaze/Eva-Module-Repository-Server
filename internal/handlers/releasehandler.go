@@ -25,17 +25,27 @@ func (h *ReleaseHandler) RejectRelease(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid Release ID format",
+			"error":   "Invalid Release ID format",
+			"result":  false,
+			"details": err.Error(),
 		})
 		return
 	}
 
 	result, err := h.service.RejectModuleRelease(userID, releaseIDUint)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"details": err.Error(),
+			"result":  false,
+			"error":   "Coulnd't reject module release",
+		})
 		return
 	}
-	c.JSON(200, result)
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Release was rejected successfully",
+		"releaseId": result,
+		"result":    true,
+	})
 }
 
 func (h *ReleaseHandler) AcceptRelease(c *gin.Context) {
@@ -45,17 +55,22 @@ func (h *ReleaseHandler) AcceptRelease(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid Release ID format",
+			"error":   "Invalid Release ID format",
+			"result":  false,
+			"details": err.Error(),
 		})
 		return
 	}
 
 	result, err := h.service.AcceptModuleRelease(userID, releaseIDUint)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, result)
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Release was accepted successfully",
+		"releaseId": result,
+	})
 }
 
 func (h *ReleaseHandler) CancelRelease(c *gin.Context) {
@@ -65,17 +80,22 @@ func (h *ReleaseHandler) CancelRelease(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid Release ID format",
+			"error":   "Invalid Release ID format",
+			"result":  false,
+			"details": err.Error(),
 		})
 		return
 	}
 
 	result, err := h.service.CancelModuleRelease(userID, releaseIDUint)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, result)
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Release was cencelled successfully",
+		"releaseId": result,
+	})
 }
 
 func (h *ReleaseHandler) ChangeToPendingRelease(c *gin.Context) {
@@ -85,17 +105,22 @@ func (h *ReleaseHandler) ChangeToPendingRelease(c *gin.Context) {
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid Release ID format",
+			"error":   "Invalid Release ID format",
+			"result":  false,
+			"details": err.Error(),
 		})
 		return
 	}
 
 	result, err := h.service.ChangeToPendingModuleRelease(userID, releaseIDUint)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(200, result)
+	c.JSON(http.StatusOK, gin.H{
+		"message":   "Release Status changed to Pending successfully",
+		"releaseId": result,
+	})
 }
 
 func (h *ReleaseHandler) DeleteModuleRelease(c *gin.Context) {
@@ -105,7 +130,9 @@ func (h *ReleaseHandler) DeleteModuleRelease(c *gin.Context) {
 	idUint, err := utils.StringToUint(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid ID format",
+			"error":   "Invalid Release ID format",
+			"result":  false,
+			"details": err.Error(),
 		})
 		return
 	}
@@ -121,11 +148,14 @@ func (h *ReleaseHandler) DeleteModuleRelease(c *gin.Context) {
 
 	result, err := h.service.DeleteModuleRelease(userID, idUint, releaseIDUint)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(200, result)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Release was deleted successfully",
+		"result":  result,
+	})
 }
 
 func (h *ReleaseHandler) CancelSuggestedRelease(c *gin.Context) {
@@ -135,7 +165,9 @@ func (h *ReleaseHandler) CancelSuggestedRelease(c *gin.Context) {
 	modIDUint, err := utils.StringToUint(modID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid ID format",
+			"error":   "Invalid Module ID format",
+			"result":  false,
+			"details": err.Error(),
 		})
 		return
 	}
@@ -144,18 +176,23 @@ func (h *ReleaseHandler) CancelSuggestedRelease(c *gin.Context) {
 	releaseIDUint, err := utils.StringToUint(releaseID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid Release ID format",
+			"error":   "Invalid Release ID format",
+			"result":  false,
+			"details": err.Error(),
 		})
 		return
 	}
 
 	result, err := h.service.CancelSuggestedModuleRelease(userID, modIDUint, releaseIDUint)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(200, result)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Release was cancelled successfully",
+		"result":  result,
+	})
 }
 
 func (h *ReleaseHandler) GetModuleRelease(c *gin.Context) {
@@ -164,7 +201,9 @@ func (h *ReleaseHandler) GetModuleRelease(c *gin.Context) {
 	idUint, err := utils.StringToUint(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid ID format",
+			"error":   "Invalid Module Release ID format",
+			"result":  false,
+			"details": err.Error(),
 		})
 		return
 	}
@@ -173,18 +212,27 @@ func (h *ReleaseHandler) GetModuleRelease(c *gin.Context) {
 	releaseIDUint, err := utils.StringToUint(releaseID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid Release ID format",
+			"error":   "Invalid Release ID format",
+			"result":  false,
+			"details": err.Error(),
 		})
 		return
 	}
 
 	module, err := h.service.GetModuleRelease(idUint, releaseIDUint)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Couldn't get Module Release",
+			"result":  false,
+			"details": err.Error()})
 		return
 	}
 
-	c.JSON(200, module)
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Release information retrieved successfully",
+		"release": module,
+		"result":  true,
+	})
 }
 
 func (h *ReleaseHandler) GetModuleReleases(c *gin.Context) {
@@ -193,51 +241,64 @@ func (h *ReleaseHandler) GetModuleReleases(c *gin.Context) {
 	idUint, err := utils.StringToUint(id)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid ID format",
-		})
-		return
-	}
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid ID format",
+			"error":   "Invalid Module ID format",
+			"result":  false,
+			"details": err.Error(),
 		})
 		return
 	}
 
 	module, err := h.service.GetModuleReleases(idUint)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Couldn't get Module Releases",
+			"result":  false,
+			"details": err.Error()})
 		return
 	}
 
-	c.JSON(200, module)
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Module Releases information retrieved successfully",
+		"releases": module,
+		"result":   true,
+	})
 }
 
 func (h *ReleaseHandler) SearchByKeywords(c *gin.Context) {
 	tagsQuery := c.Query("tags")
 	if tagsQuery == "" {
-		c.JSON(400, gin.H{"error": "tags query parameter is required"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "tags query parameter is required",
+			"result":  false,
+			"details": "tags query parameter is required",
+		})
 		return
 	}
 
 	tags := strings.Split(tagsQuery, ",")
-
 	id := c.Param("id")
 
 	idUint, err := utils.StringToUint(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid ID format",
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Invalid Module Release ID format",
+			"result":  false,
+			"details": err.Error()})
 		return
 	}
 
 	releases, err := h.service.SearchByKeywords(idUint, tags)
 	if err != nil {
-		c.JSON(500, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Couldn't search Module Releases by tags",
+			"result":  false,
+			"details": err.Error()})
 		return
 	}
 
-	c.JSON(200, releases)
+	c.JSON(http.StatusOK, gin.H{
+		"message":  "Release information retrieved successfully",
+		"releases": releases,
+		"result":   true,
+	})
 }

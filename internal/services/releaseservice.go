@@ -6,6 +6,10 @@ import (
 	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/repositories"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/logger"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/runtime"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
+	"github.com/magiconair/properties"
 )
 
 type ReleaseService struct {
@@ -13,14 +17,21 @@ type ReleaseService struct {
 	statusRepo       repositories.ReleaseStatusRepository
 	userService      *UserService
 	ownershipService *ModuleOwnershipService
+	logger           logger.ILogger
+	moduleService    *ModuleService
 }
 
-func NewReleaseService(repo repositories.ReleaseRepository, statusRepo repositories.ReleaseStatusRepository, ownershipService *ModuleOwnershipService, u *UserService) *ReleaseService {
-	return &ReleaseService{repo: repo, statusRepo: statusRepo, ownershipService: ownershipService, userService: u}
+func NewReleaseService(repo repositories.ReleaseRepository, statusRepo repositories.ReleaseStatusRepository, ownershipService *ModuleOwnershipService, u *UserService, p *properties.Properties) *ReleaseService {
+	l := runtime.CreateLogger(p)
+	return &ReleaseService{repo: repo, statusRepo: statusRepo, ownershipService: ownershipService, userService: u, logger: l}
 }
 
 func (s *ReleaseService) GetUserService() *UserService {
 	return s.userService
+}
+
+func (s *ReleaseService) SetModuleService(mod *ModuleService) {
+	s.moduleService = mod
 }
 
 func (s *ReleaseService) DeleteModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
@@ -187,7 +198,55 @@ func (s *ReleaseService) AcceptModuleRelease(userID uint, releaseID uint) (uint,
 	if err != nil {
 		return 0, err
 	}
-	return releaseID, nil
+	//need to create the release in the file system
+	err = s.createReleaseFolder(rel)
+	if err != nil {
+		return 0, err
+	}
+	return releaseID, err
+}
+
+func (s *ReleaseService) createReleaseFolder(rel *models.ModuleRelease) error {
+	mod, err := s.moduleService.GetModule(rel.ModuleID)
+	if err != nil {
+		s.logger.Errorf("release service", "couldnt find module with module ID %d", rel.ModuleID)
+		return err
+	}
+	dmo, err := s.ownershipService.FindDeveloperModuleOwner(&mod.Owner)
+	if err != nil {
+		s.logger.Errorf("release service", "couldnt find module owner with module owner ID %d", mod.OwnerID)
+		return err
+	}
+
+	dest := s.moduleService.GetModuleReleasePath(mod, rel)
+	err = utils.CreateFolderPath(dest)
+	if err != nil {
+		s.logger.Errorf("release service", "couldnt create the module release path %s", dest)
+		return err
+	}
+
+	modPath := s.moduleService.GetModulePath(dmo, mod)
+	err = utils.CopyDir(modPath, dest)
+	if err != nil {
+		s.logger.Errorf("release service", "couldnt copy the module directory to the release directory %s", dest)
+		return err
+	}
+	return nil
+}
+
+func (s *ReleaseService) cleanReleaseFolder(rel *models.ModuleRelease) error {
+	mod, err := s.moduleService.GetModule(rel.ModuleID)
+	if err != nil {
+		s.logger.Errorf("release service", "couldnt find module with module ID %d", rel.ModuleID)
+		return err
+	}
+
+	dest := s.moduleService.GetModuleReleasePath(mod, rel)
+	if utils.FolderExists(dest) {
+		return utils.CleanFolder(dest)
+	}
+
+	return nil
 }
 
 func (s *ReleaseService) RejectModuleRelease(userID uint, releaseID uint) (uint, error) {
@@ -232,6 +291,12 @@ func (s *ReleaseService) CancelModuleRelease(userID uint, releaseID uint) (uint,
 	if err != nil {
 		return 0, err
 	}
+	//need to clean the release from the file system
+	err = s.cleanReleaseFolder(rel)
+	if err != nil {
+		s.logger.Errorf("release service", "couldnt clean the release folder with release ID %d", rel.ID)
+		return 0, err
+	}
 	return releaseID, nil
 }
 
@@ -254,6 +319,14 @@ func (s *ReleaseService) ChangeToPendingModuleRelease(userID uint, releaseID uin
 	if err != nil {
 		return 0, err
 	}
+
+	//need to clean the release from the file system if there
+	err = s.cleanReleaseFolder(rel)
+	if err != nil {
+		s.logger.Errorf("release service", "couldnt clean the release folder with release ID %d", rel.ID)
+		return 0, err
+	}
+
 	return releaseID, nil
 }
 

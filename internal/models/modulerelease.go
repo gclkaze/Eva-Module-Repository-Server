@@ -11,7 +11,7 @@ type ModuleRelease struct {
 	ModuleID    uint                `json:"module_id"`
 	Version     string              `gorm:"not null" json:"version"`
 	Description string              `json:"description"`
-	ReleasedAt  time.Time           `json:"released_at"`
+	ReleasedAt  *time.Time          `gorm:"type:datetime"`
 	StatusID    uint                `json:"status_id"`
 	Status      ModuleReleaseStatus `gorm:"foreignKey:StatusID"`
 	Keywords    []Keyword           `gorm:"many2many:release_keywords;" json:"keywords,omitempty"`

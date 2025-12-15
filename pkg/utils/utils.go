@@ -3,6 +3,7 @@ package utils
 import (
 	"strconv"
 
+	"github.com/gosimple/slug"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/mod/semver"
 )
@@ -30,4 +31,8 @@ func HashPassword(pw string) (string, error) {
 
 func IsValidVersion(v string) bool {
 	return semver.IsValid("v" + v)
+}
+
+func GetRepoName(input string) string {
+	return slug.Make(input)
 }

@@ -36,7 +36,9 @@ func NewReleaseStatusRepository(db *gorm.DB) ReleaseStatusRepository {
 
 func (r releaseStatusRepository) Initialize() error {
 	statuses := []string{"draft", "pending", "accepted", "rejected", "canceled"}
-	description := []string{"This is a draft of a release.", "The release is waiting to be checked by the EVA Language Team.", "The release has been accepted by the EVA Language Team.", "The release has been rejected by the EVA Language Team."}
+	description := []string{"This is a draft of a release.", "The release is waiting to be checked by the EVA Language Team.",
+		"The release has been accepted by the EVA Language Team.", "The release has been rejected by the EVA Language Team.",
+		"The release has been canceled by the EVA Language Team."}
 
 	for i, status := range statuses {
 		var count int64
@@ -52,7 +54,7 @@ func (r releaseStatusRepository) Initialize() error {
 
 func (r releaseStatusRepository) GetStatus(t ReleaseStatusTypeDef) (*models.ModuleReleaseStatus, error) {
 	var m models.ModuleReleaseStatus
-	res := r.db.Where("label = ?", t.String())
+	res := r.db.Where("label = ?", t.String()).First(&m)
 	if errors.Is(res.Error, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

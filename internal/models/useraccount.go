@@ -7,7 +7,7 @@ import (
 type UserAccount struct {
 	gorm.Model
 
-	Email    string `gorm:"uniqueIndex" json:"email"`
+	Email    string `gorm:"type:varchar(255);uniqueIndex" json:"email"`
 	Password string
 	RoleID   uint     `json:"user_id"`
 	UserRole UserRole `gorm:"foreignKey:RoleID"`

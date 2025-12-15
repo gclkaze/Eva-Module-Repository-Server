@@ -100,7 +100,7 @@ func (s *UserService) GetUserPermissions(id uint) ([]models.UserPermission, erro
 		return nil, err
 	}
 	role, err := s.roleRepo.FindByID(user.RoleID)
-	if role != nil {
+	if err != nil {
 		return nil, err
 	}
 	return role.Permissions, nil

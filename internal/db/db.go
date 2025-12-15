@@ -75,7 +75,7 @@ func (db *EvaModuleRepositoryDatabase) Initialize(p *properties.Properties) erro
 
 	db.db, error = gorm.Open(mysql.Open(connectionString), db.getConfig(p))
 	if error != nil {
-		return fmt.Errorf("failed to connect to database: ", error)
+		return fmt.Errorf("failed to connect to database: %s ", error.Error())
 	}
 
 	// Auto migrate your models

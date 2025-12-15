@@ -63,6 +63,8 @@ func NewModuleService(repo repositories.ModuleRepository, dev *UserService, p *p
 	mod.logger = l
 	mod.ownershipService = ownershipService
 	mod.releaseService = releaseService
+
+	mod.releaseService.SetModuleService(mod)
 	return mod, nil
 }
 
@@ -76,6 +78,19 @@ func (s ModuleService) GetModulePath(dev *models.DeveloperModuleOwner, mod *mode
 func (s ModuleService) GetDevPath(dev *models.Developer) string {
 	devID := dev.ID
 	path := fmt.Sprintf("%s/%s/%d", s.moduleFolder, s.devFolder, devID)
+	return path
+}
+
+func (s ModuleService) GetReleasePath(mod *models.Module, release *models.ModuleRelease) string {
+	mName := utils.GetRepoName(mod.Repr)
+	path := fmt.Sprintf("%s/%s", s.releaseFolder, mName)
+	return path
+}
+
+func (s ModuleService) GetModuleReleasePath(mod *models.Module, release *models.ModuleRelease) string {
+	devPath := s.GetReleasePath(mod, release)
+	version := release.Version
+	path := fmt.Sprintf("%s/%s", devPath, version)
 	return path
 }
 
@@ -138,6 +153,10 @@ func (s *ModuleService) CreateModule(userID uint, title string, descr string, re
 	}
 
 	return mod.ID, nil
+}
+
+func (s ModuleService) GetTheModulePath(mod *models.Module) {
+
 }
 
 func (s *ModuleService) CreateModuleTx(

@@ -30,7 +30,7 @@ func (d *userRoleRepository) Create(dev *models.UserRole) error {
 
 func (d *userRoleRepository) FindByID(id uint) (*models.UserRole, error) {
 	var dev models.UserRole
-	err := d.db.First(&dev, 1).Error
+	err := d.db.Preload("Permissions").First(&dev, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -78,8 +78,12 @@ func (d *userRoleRepository) Update(role *models.UserRole) error {
 func (d *userRoleRepository) Initialize() error {
 	for _, t := range models.GetUserRoleTypes() {
 		var res models.UserRole
-		theResult := d.db.Where("name = ?", t.String()).Find(&res)
-		if errors.Is(theResult.Error, gorm.ErrRecordNotFound) {
+		result := d.db.Where("name = ?", t.String()).Find(&res)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		if result.RowsAffected == 0 {
 			if err := d.db.Create(models.NewUserRoleWithoutPerms(t.String())).Error; err != nil {
 				return err
 			}
