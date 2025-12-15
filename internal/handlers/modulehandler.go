@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/services"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/gin-gonic/gin"
@@ -23,11 +24,13 @@ func (h *ModuleHandler) FindByID(c *gin.Context) {
 
 	idUint, err := utils.StringToUint(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid ID format",
-			"result":  false,
-			"details": err.Error(),
-		})
+		/*		c.JSON(http.StatusBadRequest, gin.H{
+				"error":   "Invalid ID format",
+				"result":  false,
+				"details": err.Error(),
+			})*/
+
+		c.JSON(http.StatusBadRequest, models.NewErroneousRequestResult(err.Error(), "Invalid ID format"))
 		return
 	}
 
