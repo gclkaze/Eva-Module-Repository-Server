@@ -31,6 +31,10 @@ func (be EvaModuleRepositoryBackend) GetJWTSecret() string {
 	return be.authService.GetJWTSecret()
 }
 
+func (be *EvaModuleRepositoryBackend) GetProperties() *properties.Properties {
+	return be.properties
+}
+
 func (be *EvaModuleRepositoryBackend) Initialize() error {
 	if config.TheConfigReader.IsOnError() {
 		return fmt.Errorf("couldn't read the properties file")

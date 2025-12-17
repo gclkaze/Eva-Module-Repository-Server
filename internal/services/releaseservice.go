@@ -33,6 +33,9 @@ func (s *ReleaseService) GetUserService() *UserService {
 func (s *ReleaseService) SetModuleService(mod *ModuleService) {
 	s.moduleService = mod
 }
+func (s ReleaseService) FindByID(id uint) (*models.ModuleRelease, error) {
+	return s.repo.FindByID(id)
+}
 
 func (s *ReleaseService) DeleteModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
 	if s.userService.UserHasPermission(userID, models.DeleteModules) {
