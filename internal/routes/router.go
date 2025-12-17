@@ -31,7 +31,6 @@ func NewEvaModuleRepositoryRouter() *EvaModuleRepositoryRouter {
 }
 
 func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.EvaModuleRepositoryBackend) error {
-
 	router.api = r.Group("/api")
 	router.moduleHandler = handlers.NewModuleHandler(be.GetModuleService())
 	router.releaseHandler = handlers.NewReleaseHandler(be.GetReleaseService())

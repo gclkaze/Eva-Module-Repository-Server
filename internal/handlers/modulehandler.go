@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/services"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/gin-gonic/gin"
@@ -21,34 +20,18 @@ func NewModuleHandler(service *services.ModuleService) *ModuleHandler {
 
 func (h *ModuleHandler) FindByID(c *gin.Context) {
 	id := c.Param("id")
-
 	idUint, err := utils.StringToUint(id)
 	if err != nil {
-		/*		c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "Invalid ID format",
-				"result":  false,
-				"details": err.Error(),
-			})*/
-
-		c.JSON(http.StatusBadRequest, models.NewErroneousRequestResult(err.Error(), "Invalid ID format"))
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Invalid ID format"))
 		return
 	}
 
 	module, err := h.service.FindByID(idUint)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Couldn't find module",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't find module"))
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"message":  "Module information retrieved successfully",
-		"releases": module,
-		"result":   true,
-	})
+	c.JSON(http.StatusOK, utils.OkWithMessage(module, "Module information retrieved successfully"))
 }
 
 func (h *ModuleHandler) Delete(c *gin.Context) {
@@ -56,26 +39,16 @@ func (h *ModuleHandler) Delete(c *gin.Context) {
 	userID := c.GetUint("userId")
 	idUint, err := utils.StringToUint(id)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid ID format",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Invalid ID format"))
 		return
 	}
 	res, err := h.service.Delete(userID, idUint)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Couldn't delete module",
-			"result":  false,
-			"details": err.Error()})
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't delete module"))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Module deleted successfully",
-		"result":  res,
-	})
+	c.JSON(http.StatusOK, utils.OkWithMessage(res, "Module deleted successfully"))
 }
 
 func (h *ModuleHandler) Upload(c *gin.Context) {
@@ -87,40 +60,25 @@ func (h *ModuleHandler) Upload(c *gin.Context) {
 
 	// Validate required fields
 	if title == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Title is required",
-			"result":  false,
-			"details": "",
-		})
+		c.JSON(http.StatusBadRequest, utils.Err(nil, "Title is required"))
 		return
 	}
 
 	// Handle file upload
 	file, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "File upload failed",
-			"result":  false,
-			"details": err.Error()})
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Uploaded file is empty"))
 		return
 	}
 
 	// Call service to create module
 	id, err := h.service.CreateModuleTx(userID, title, description, repr, file, tags, c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Couldn't upload module",
-			"result":  false,
-			"details": err.Error()})
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't upload module"))
 		return
 	}
 
-	// Respond with created resource
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Module code was uploaded successfully",
-		"module":  id,
-		"result":  true,
-	})
+	c.JSON(http.StatusOK, utils.OkWithMessage(id, "Module code was uploaded successfully"))
 }
 
 func (h *ModuleHandler) Update(c *gin.Context) {
@@ -133,48 +91,28 @@ func (h *ModuleHandler) Update(c *gin.Context) {
 
 	modIDUint, err := utils.StringToUint(modID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid Module ID format",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Invalid Module ID format"))
 		return
 	}
 
 	if title == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Title is required",
-			"result":  false,
-			"details": "",
-		})
+		c.JSON(http.StatusBadRequest, utils.Err(nil, "Title is required"))
 		return
 	}
 
 	file, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "File upload failed",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, utils.Err(err, "File upload failed"))
 		return
 	}
 
 	id, err := h.service.UpdateUserModule(userID, modIDUint, title, description, repr, file, tags, c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Couldn't update module",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't update module"))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Module was updated successfully",
-		"module":  id,
-		"result":  true,
-	})
+	c.JSON(http.StatusOK, utils.OkWithMessage(id, "Module was updated successfully"))
 }
 
 func (h *ModuleHandler) SuggestRelease(c *gin.Context) {
@@ -184,55 +122,32 @@ func (h *ModuleHandler) SuggestRelease(c *gin.Context) {
 
 	modIDUint, err := utils.StringToUint(modID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid Module ID format",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Invalid Module ID format"))
 		return
 	}
 
 	id, err := h.service.SuggestUserModuleRelease(userID, modIDUint, version)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Couldn't suggest module release",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't suggest module release"))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Module suggested for release successfully",
-		"release": id,
-		"result":  true,
-	})
+	c.JSON(http.StatusOK, utils.OkWithMessage(id, "Module suggested for release successfully"))
 }
 
 func (h *ModuleHandler) SearchModulesByTags(c *gin.Context) {
 	tagsQuery := c.Query("tags")
 	if tagsQuery == "" {
-		c.JSON(400, gin.H{
-			"error":  "tags query parameter is required",
-			"result": false,
-		})
+		c.JSON(http.StatusBadRequest, utils.Err(nil, "tags query parameter is required"))
 		return
 	}
 
 	labels := strings.Split(tagsQuery, ",")
 	modules, err := h.service.SearchByKeywords(labels)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Couldn't find the modules",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't find the modules"))
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Module search was complete",
-		"modules": modules,
-		"result":  true,
-	})
+	c.JSON(http.StatusOK, utils.OkWithMessage(modules, "Module search was complete"))
 }

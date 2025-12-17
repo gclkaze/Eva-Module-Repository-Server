@@ -5,6 +5,7 @@ import (
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/services"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,21 +21,14 @@ func NewAuthHandler(service *services.AuthService, userService *services.UserSer
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid payload",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Invalid payload"))
 		return
 	}
 
 	var user *models.UserAccount
 	user, err := h.service.Authenticate(req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "Invalid crendentials",
-			"result":  false,
-			"details": err.Error()})
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
 		return
 	}
 
@@ -42,19 +36,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	if user == nil {
 		userID, createUserErr := h.userService.CreateUser(req.Handle, req.FirstName, req.LastName, req.Email, req.Password, true)
 		if createUserErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "Couldn't create user",
-				"result":  false,
-				"details": createUserErr.Error()})
+			c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't create user"))
 			return
 		}
 		userResult, findUserErr := h.userService.FindUserByID(userID)
 		if findUserErr != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error":   "Couldn't find user ID",
-				"details": findUserErr.Error(),
-				"result":  false,
-			})
+			c.JSON(http.StatusInternalServerError, utils.Err(findUserErr, "Couldn't find user ID"))
 			return
 		}
 		user = userResult
@@ -62,94 +49,67 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	access, refresh, err := h.service.GenerateTokens(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"details": err.Error(),
-			"error":   "token creation failed",
-			"result":  false,
-		})
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "token creation failed"))
 		return
 	}
 
-	c.JSON(http.StatusOK, models.LoginResponse{
+	c.JSON(http.StatusOK, utils.OkWithMessage(models.LoginResponse{
 		AccessToken:  access,
 		RefreshToken: refresh,
-	})
+	}, "Registration was successfull"))
 }
 
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid payload",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Invalid payload"))
 		return
 	}
 
 	user, err := h.service.Authenticate(req.Email, req.Password)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error":   "Invalid crendentials",
-			"result":  false,
-			"details": err.Error()})
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
 		return
 	}
 
 	if user == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"details": "unregistered user",
-			"result":  false,
-			"error":   "you need to register first!"})
+		c.JSON(http.StatusUnauthorized, utils.Err(nil, "unregistered user"))
 		return
 	}
 	access, refresh, err := h.service.GenerateTokens(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"details": err.Error(),
-			"result":  false,
-			"error":   "token creation failed"})
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "token creation failed"))
 		return
 	}
 
-	c.JSON(http.StatusOK, models.LoginResponse{
+	c.JSON(http.StatusOK, utils.OkWithMessage(models.LoginResponse{
 		AccessToken:  access,
 		RefreshToken: refresh,
-	})
+	}, "Login was successfull"))
 }
 
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req models.RefreshRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid payload",
-			"result":  false,
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Invalid payload"))
 		return
 	}
 
 	user, err := h.service.ValidateRefreshToken(req.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"details": err.Error(),
-			"error":   "invalid refresh token",
-			"result":  false})
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "invalid refresh token"))
 		return
 	}
 
 	access, refresh, err := h.service.GenerateTokens(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"details": err.Error(),
-			"result":  false,
-			"error":   "failed to generate tokens"})
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "failed to generate tokens"))
 		return
 	}
 
-	c.JSON(http.StatusOK, models.LoginResponse{
+	c.JSON(http.StatusOK, utils.OkWithMessage(models.LoginResponse{
 		AccessToken:  access,
 		RefreshToken: refresh,
-	})
+	}, "Refresh was successfull"))
 }
