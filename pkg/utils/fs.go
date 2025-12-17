@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"io/fs"
@@ -111,7 +113,7 @@ func CopyDir(src, dst string) error {
 		return fmt.Errorf("source is not a directory")
 	}
 
-	if err := os.MkdirAll(dst, info.Mode()); err != nil {
+	if err = os.MkdirAll(dst, info.Mode()); err != nil {
 		return err
 	}
 
@@ -136,4 +138,62 @@ func CopyDir(src, dst string) error {
 	}
 
 	return nil
+}
+
+func CreateTarGz(sourceDir, targetFile string) error {
+	if !FolderExists(sourceDir) {
+		return fmt.Errorf("source folder %s does not exist", sourceDir)
+	}
+	outFile, err := os.Create(targetFile)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	gzipWriter := gzip.NewWriter(outFile)
+	defer gzipWriter.Close()
+
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer tarWriter.Close()
+
+	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Skip root folder itself, but include its contents
+		if path == sourceDir {
+			return nil
+		}
+
+		header, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return err
+		}
+
+		// Keep folder structure inside the tar
+		relPath, err := filepath.Rel(sourceDir, path)
+		if err != nil {
+			return err
+		}
+		header.Name = relPath
+
+		if err = tarWriter.WriteHeader(header); err != nil {
+			return err
+		}
+
+		// Directories have no body
+		if info.IsDir() {
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		_, err = io.Copy(tarWriter, file)
+		return err
+	})
 }
