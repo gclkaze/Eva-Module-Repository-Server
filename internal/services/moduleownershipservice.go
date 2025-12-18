@@ -46,10 +46,13 @@ func (s ModuleOwnershipService) FindDeveloperModuleOwner(mo *models.ModuleOwner)
 	if mo.Type.Label != models.Dev.String() {
 		return nil, nil
 	}
-
 	res, err := s.devModuleOwnerRepo.FindByDevAndModOwner(mo)
 	if err != nil {
 		return nil, nil
 	}
 	return res, nil
+}
+
+func (s ModuleOwnershipService) Delete(id uint) (bool, error) {
+	return s.devModuleOwnerRepo.Delete(id)
 }

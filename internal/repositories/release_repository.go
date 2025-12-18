@@ -19,6 +19,7 @@ type ReleaseRepository interface {
 	CancelSuggestedModuleRelease(userID uint, id uint, releaseID uint) (bool, error)
 	GetModuleRelease(id uint, releaseID uint) (*models.ModuleRelease, error)
 	GetModuleReleases(id uint) ([]models.ModuleRelease, error)
+	GetModuleReleasesIDs(id uint) ([]uint, error)
 	SearchModuleReleasesByTags(id uint, tags []string) ([]models.ModuleRelease, error)
 	GetModuleReleasesWithStatus(id uint, statusID uint) ([]models.ModuleRelease, error)
 	GetModuleReleaseWithStatus(modID uint, releaseID uint, statusID uint) (*models.ModuleRelease, error)
@@ -75,8 +76,19 @@ func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, e
 	if err != nil {
 		return nil, err
 	}
-
 	return results, nil
+}
+
+func (r releaseRepository) GetModuleReleasesIDs(id uint) ([]uint, error) {
+	var ids []uint
+	err := r.db.Where("module_id = ?", id).Pluck("id", &ids).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
 
 func (r releaseRepository) GetModuleReleasesWithStatus(id uint, statusID uint) ([]models.ModuleRelease, error) {

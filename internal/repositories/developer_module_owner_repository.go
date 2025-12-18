@@ -11,6 +11,7 @@ type DeveloperModuleOwnerRepository interface {
 	Create(d *models.Developer, mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error)
 	CreateTx(tx *gorm.DB, d *models.Developer, mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error)
 	FindByDevAndModOwner(mo *models.ModuleOwner) (*models.DeveloperModuleOwner, error)
+	Delete(id uint) (bool, error)
 }
 
 type developerModuleOwnerRepository struct {
@@ -40,4 +41,19 @@ func (m developerModuleOwnerRepository) FindByDevAndModOwner(mo *models.ModuleOw
 		return nil, nil
 	}
 	return &dmo, nil
+}
+
+func (m developerModuleOwnerRepository) Delete(id uint) (bool, error) {
+	var r models.DeveloperModuleOwner
+	res := m.db.Where(id).Delete(&r)
+
+	if res.Error != nil {
+		return false, res.Error
+	}
+
+	if res.RowsAffected == 0 {
+		return false, nil
+	}
+
+	return true, nil
 }

@@ -48,9 +48,29 @@ func (s ReleaseService) GetRelease(id uint) (*models.ModuleRelease, error) {
 	return s.repo.GetRelease(id)
 }
 
+func (s *ReleaseService) removeModuleReleaseFolder(modID uint, releaseID uint) (bool, error) {
+	release, err := s.repo.GetModuleRelease(modID, releaseID)
+	if err != nil {
+		return false, err
+	}
+
+	err = s.cleanReleaseFolder(release)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
+
+}
+
 func (s *ReleaseService) DeleteModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
 	if s.userService.UserHasPermission(userID, models.DeleteModules) {
-		return s.repo.DeleteModuleRelease(userID, modID, releaseID)
+		res, err := s.repo.DeleteModuleRelease(userID, modID, releaseID)
+		if res && err != nil {
+			//lets remove the release folder
+			return s.removeModuleReleaseFolder(modID, releaseID)
+		}
+		s.logger.Errorf("release service", "couldn't delete Module Release folder for mod: %d and release: %d", modID, releaseID)
+		return res, err
 	}
 
 	release, err := s.repo.GetModuleRelease(modID, releaseID)
@@ -65,7 +85,13 @@ func (s *ReleaseService) DeleteModuleRelease(userID uint, modID uint, releaseID 
 		return false, fmt.Errorf("only initiator can delete the release")
 	}
 
-	return s.repo.DeleteModuleRelease(userID, modID, releaseID)
+	res, err := s.repo.DeleteModuleRelease(userID, modID, releaseID)
+	if res && err != nil {
+		//lets remove the release folder
+		return s.removeModuleReleaseFolder(modID, releaseID)
+	}
+	s.logger.Errorf("release service", "couldn't delete user's %d Module Release folder for mod: %d and release: %d", userID, modID, releaseID)
+	return res, err
 }
 
 func (s *ReleaseService) CancelSuggestedModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
@@ -190,6 +216,17 @@ func (s *ReleaseService) GetModuleReleases(id uint) ([]dto.ReleaseDTO, error) {
 		dtos = append(dtos, *dto.NewReleaseDTO(results[i]))
 	}
 	return dtos, error
+}
+
+func (s *ReleaseService) GetModuleReleaseIds(id uint) ([]uint, error) {
+	results, error := s.repo.GetModuleReleasesIDs(id)
+	if error != nil {
+		return nil, error
+	}
+	if results == nil {
+		return nil, nil
+	}
+	return results, nil
 }
 
 func (s *ReleaseService) SearchByKeywords(id uint, tags []string) ([]dto.ReleaseDTO, error) {

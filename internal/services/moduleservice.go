@@ -379,10 +379,62 @@ func (s *ModuleService) GetModule(id uint) (*models.Module, error) {
 	return result, nil
 }
 
-func (s *ModuleService) Delete(userID uint, modID uint) (bool, error) {
+func (s *ModuleService) deleteModuleReleases(userID uint, modID uint) (bool, error) {
+	releaseIDS, err := s.releaseService.GetModuleReleaseIds(modID)
+	if err != nil {
+		return false, err
+	}
 
+	for i := range releaseIDS {
+		res, err := s.releaseService.DeleteModuleRelease(userID, modID, releaseIDS[i])
+		if err != nil {
+			s.logger.Errorf("module service", "couldn't delete Module Release folder for mod: %d and release: %d", modID, releaseIDS[i])
+			return false, err
+		}
+		if !res {
+			s.logger.Errorf("module service", "couldn't delete Module Release folder for mod: %d and release: %d", modID, releaseIDS[i])
+		}
+	}
+	return true, nil
+}
+
+func (s *ModuleService) deleteModule(userID uint, modID uint) (bool, error) {
+	mod, err := s.GetModule(modID)
+	if err != nil {
+		s.logger.Errorf("module service", "couldn't find the module %d of user %d", modID, userID)
+		return false, err
+	}
+
+	res, err := s.deleteModuleReleases(userID, modID)
+	if res && err != nil {
+		//let's delete also the module's folder
+		dmo, dmoErr := s.ownershipService.FindDeveloperModuleOwner(&mod.Owner)
+		if dmoErr != nil {
+			return false, dmoErr
+		}
+		modPath := s.GetModulePath(dmo, mod)
+		modDeletionRes, modDeletionErr := s.repo.Delete(modID)
+		if modDeletionErr != nil {
+			return false, modDeletionErr
+		}
+		if !modDeletionRes {
+			s.logger.Errorf("module service", "the module has already been deleted %d with user %d", userID, modID)
+		}
+
+		//let's remove the folder
+		if utils.FolderExists(modPath) {
+			utils.CleanFolder(modPath)
+		}
+		//lets remove the dmo
+		return s.ownershipService.Delete(dmo.ID)
+
+	}
+	return res, err
+}
+
+func (s *ModuleService) Delete(userID uint, modID uint) (bool, error) {
 	if s.releaseService.userService.UserHasPermission(userID, models.DeleteModules) {
-		return s.repo.Delete(modID)
+		return s.deleteModule(userID, modID)
 	}
 	mod, err := s.GetModule(modID)
 	if err != nil {
@@ -396,7 +448,7 @@ func (s *ModuleService) Delete(userID uint, modID uint) (bool, error) {
 	if mod.Owner.Type.Label != models.Dev.String() {
 		return false, fmt.Errorf("user with ID %d didn't match with the module type", userID)
 	}
-	return s.repo.Delete(modID)
+	return s.deleteModule(userID, modID)
 }
 
 func (s *ModuleService) SearchByKeywords(tags []string) ([]dto.ModuleDTO, error) {
