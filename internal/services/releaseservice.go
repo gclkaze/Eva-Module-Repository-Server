@@ -16,6 +16,7 @@ import (
 type ReleaseService struct {
 	repo                repositories.ReleaseRepository
 	statusRepo          repositories.ReleaseStatusRepository
+	statRepo            repositories.ReleaseStatisticsRepository
 	userService         *UserService
 	ownershipService    *ModuleOwnershipService
 	logger              logger.ILogger
@@ -23,13 +24,13 @@ type ReleaseService struct {
 	defaultDistFilename string
 }
 
-func NewReleaseService(repo repositories.ReleaseRepository, statusRepo repositories.ReleaseStatusRepository, ownershipService *ModuleOwnershipService, u *UserService, p *properties.Properties) *ReleaseService {
+func NewReleaseService(repo repositories.ReleaseRepository, statusRepo repositories.ReleaseStatusRepository, ownershipService *ModuleOwnershipService, u *UserService, p *properties.Properties, statRepo repositories.ReleaseStatisticsRepository) *ReleaseService {
 	l := runtime.CreateLogger(p)
 	s := "dist.tar.gz"
 	if p != nil {
 		s = p.GetString("dist_name", s)
 	}
-	return &ReleaseService{repo: repo, statusRepo: statusRepo, ownershipService: ownershipService, userService: u, logger: l, defaultDistFilename: s}
+	return &ReleaseService{repo: repo, statusRepo: statusRepo, ownershipService: ownershipService, userService: u, logger: l, defaultDistFilename: s, statRepo: statRepo}
 }
 
 func (s *ReleaseService) GetUserService() *UserService {
@@ -144,7 +145,22 @@ func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Modul
 
 	dev := dmo.Developer
 	newRelease := models.NewModuleReleaseFromModule(mod, version, *st, sz, dev)
-	s.repo.Create(newRelease)
+	err = s.repo.Create(newRelease)
+	if err != nil {
+		return 0, err
+	}
+
+	stat, err := s.statRepo.Create(newRelease)
+	if err != nil {
+		return 0, err
+	}
+
+	newRelease.Statistics = stat
+	err = s.repo.Update(newRelease)
+	if err != nil {
+		return 0, err
+	}
+
 	//res, err = s.userHasPendingRelease(devID)
 	return newRelease.ID, nil
 }

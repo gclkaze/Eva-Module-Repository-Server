@@ -33,6 +33,7 @@ type EvaModuleRepositoryDatabase struct {
 	userPermissionRepo  repositories.UserPermissionRepository
 	userRoleRepo        repositories.UserRoleRepository
 	devAccountRepo      repositories.DeveloperRepository
+	releaseStatRepo     repositories.ReleaseStatisticsRepository
 }
 
 func NewEvaModuleRepositoryDatabase() *EvaModuleRepositoryDatabase {
@@ -91,6 +92,7 @@ func (db *EvaModuleRepositoryDatabase) Initialize(p *properties.Properties) erro
 		&models.ModuleRelease{},
 		&models.DeveloperModuleOwner{},
 		&models.Keyword{},
+		&models.ReleaseStatistics{},
 	)
 
 	db.initializeRepositories()
@@ -118,9 +120,14 @@ func (db *EvaModuleRepositoryDatabase) initializeRepositories() error {
 	db.devModuleOwnerRepo = repositories.NewDeveloperModuleOwnerRepository(db.db)
 	db.moduleOwnerTypeRepo = repositories.NewModuleOwnerTypesRepository(db.db)
 	db.keywordRepo = repositories.NewKeywordRepository(db.db)
-	db.userPermissionRepo = repositories.NewUserPermissionRepository(db.db) //repositories.UserPermissionRepository
-	db.userRoleRepo = repositories.NewUserRoleRepository(db.db)             //repositories.UserRoleRepository
+	db.userPermissionRepo = repositories.NewUserPermissionRepository(db.db)
+	db.userRoleRepo = repositories.NewUserRoleRepository(db.db)
+	db.releaseStatRepo = repositories.NewReleaseStatisticsRepository(db.db)
 	return nil
+}
+
+func (db EvaModuleRepositoryDatabase) GetReleaseStatisticsRepository() repositories.ReleaseStatisticsRepository {
+	return db.releaseStatRepo
 }
 
 func (db EvaModuleRepositoryDatabase) GetModuleRepository() repositories.ModuleRepository {

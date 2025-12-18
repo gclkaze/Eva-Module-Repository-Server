@@ -18,6 +18,7 @@ type ModuleRelease struct {
 	DiskSize    int64               `json:"disk_size"`
 	CreatorID   uint                `json:"creator_id"`
 	Creator     Developer           `gorm:"foreignKey:CreatorID"`
+	Statistics  *ReleaseStatistics  `gorm:"foreignKey:ReleaseID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
 }
 
 func NewModuleReleaseFromModule(m *Module, version string, status ModuleReleaseStatus, diskSize int64, creator Developer) *ModuleRelease {
