@@ -140,11 +140,15 @@ func CopyDir(src, dst string) error {
 	return nil
 }
 
-func CreateTarGz(sourceDir, targetFile string) error {
-	if !FolderExists(sourceDir) {
-		return fmt.Errorf("source folder %s does not exist", sourceDir)
+func CreateTarGz(src, dstFile string) error {
+	if !FolderExists(src) {
+		return fmt.Errorf("source folder %s does not exist", src)
 	}
-	outFile, err := os.Create(targetFile)
+
+	src = filepath.Clean(src)
+	dstFile = filepath.Clean(dstFile)
+
+	outFile, err := os.Create(dstFile)
 	if err != nil {
 		return err
 	}
@@ -156,13 +160,13 @@ func CreateTarGz(sourceDir, targetFile string) error {
 	tarWriter := tar.NewWriter(gzipWriter)
 	defer tarWriter.Close()
 
-	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		// Skip root folder itself, but include its contents
-		if path == sourceDir {
+		if path == src {
 			return nil
 		}
 
@@ -172,7 +176,7 @@ func CreateTarGz(sourceDir, targetFile string) error {
 		}
 
 		// Keep folder structure inside the tar
-		relPath, err := filepath.Rel(sourceDir, path)
+		relPath, err := filepath.Rel(src, path)
 		if err != nil {
 			return err
 		}

@@ -114,23 +114,23 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 
 	supervision := router.api.Group("supervise")
 	{
-		supervision.GET("/download/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+		supervision.POST("/download/release/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 			models.UpdateReleases,
 		})), router.downloadHandler.DownloadAnyRelease)
 
-		supervision.GET("/reject/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+		supervision.POST("/reject/release/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 			models.RejectReleases,
 		})), router.releaseHandler.RejectRelease)
 
-		supervision.GET("/accept/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+		supervision.POST("/accept/release/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 			models.AcceptReleases,
 		})), router.releaseHandler.AcceptRelease)
 
-		supervision.GET("/cancel/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+		supervision.POST("/cancel/release/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 			models.CancelReleases,
 		})), router.releaseHandler.CancelRelease)
 
-		supervision.GET("/pending/release/:id", router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+		supervision.POST("/pending/release/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 			models.CancelReleases,
 		})), router.releaseHandler.ChangeToPendingRelease)
 

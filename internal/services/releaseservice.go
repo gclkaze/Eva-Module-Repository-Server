@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
@@ -13,17 +14,22 @@ import (
 )
 
 type ReleaseService struct {
-	repo             repositories.ReleaseRepository
-	statusRepo       repositories.ReleaseStatusRepository
-	userService      *UserService
-	ownershipService *ModuleOwnershipService
-	logger           logger.ILogger
-	moduleService    *ModuleService
+	repo                repositories.ReleaseRepository
+	statusRepo          repositories.ReleaseStatusRepository
+	userService         *UserService
+	ownershipService    *ModuleOwnershipService
+	logger              logger.ILogger
+	moduleService       *ModuleService
+	defaultDistFilename string
 }
 
 func NewReleaseService(repo repositories.ReleaseRepository, statusRepo repositories.ReleaseStatusRepository, ownershipService *ModuleOwnershipService, u *UserService, p *properties.Properties) *ReleaseService {
 	l := runtime.CreateLogger(p)
-	return &ReleaseService{repo: repo, statusRepo: statusRepo, ownershipService: ownershipService, userService: u, logger: l}
+	s := "dist.tar.gz"
+	if p != nil {
+		s = p.GetString("dist_name", s)
+	}
+	return &ReleaseService{repo: repo, statusRepo: statusRepo, ownershipService: ownershipService, userService: u, logger: l, defaultDistFilename: s}
 }
 
 func (s *ReleaseService) GetUserService() *UserService {
@@ -234,6 +240,14 @@ func (s *ReleaseService) createReleaseFolder(rel *models.ModuleRelease) error {
 		s.logger.Errorf("release service", "couldnt copy the module directory to the release directory %s", dest)
 		return err
 	}
+
+	dest = path.Join(dest, s.defaultDistFilename)
+	err = utils.CreateTarGz(modPath, dest)
+	if err != nil {
+		s.logger.Errorf("release service", "couldnt create tar ball of the module directory and copy to the release directory %s", dest)
+		return err
+	}
+
 	return nil
 }
 

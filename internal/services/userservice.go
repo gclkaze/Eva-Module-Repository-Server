@@ -1,6 +1,9 @@
 package services
 
 import (
+	"fmt"
+
+	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/repositories"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/logger"
@@ -82,6 +85,36 @@ func (s *UserService) CreateUser(handle string, firstName string, lastName strin
 	return dev.ID, nil
 }
 
+func (s *UserService) CreateUserWithRole(handle string, firstName string, lastName string, email string, password string, active bool, roleString string) (uint, error) {
+	var dev *models.Developer
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	password = string(hash)
+
+	role, err := s.roleRepo.FindByValue(roleString)
+	if err != nil {
+		return 0, err
+	}
+
+	account := models.NewUserAccount(role, email, password)
+
+	err = s.accountRepo.Create(account)
+	if err != nil {
+		return 0, err
+	}
+
+	dev = models.NewDeveloper(handle, firstName, lastName, account.ID, *account, active)
+	err = s.repo.Create(dev)
+	if err != nil {
+		return 0, err
+	}
+	return dev.ID, nil
+}
+
+func (s *UserService) CreateUserFromDTO(dto *dto.UserAccountDTO) (uint, error) {
+	return s.CreateUserWithRole(dto.Handle, dto.FirstName, dto.LastName, dto.Email, dto.Password, dto.Active, dto.UserRole)
+}
+
 func (s *UserService) FindByID(id uint) (*models.Developer, error) {
 	return s.repo.FindByID(id)
 }
@@ -98,6 +131,10 @@ func (s *UserService) GetUserPermissions(id uint) ([]models.UserPermission, erro
 	user, err := s.accountRepo.GetByID(id)
 	if err != nil {
 		return nil, err
+	}
+	if user == nil {
+		s.logger.Errorf("user service", "unknown user with id %d", id)
+		return nil, fmt.Errorf("unknown user with id %d", id)
 	}
 	role, err := s.roleRepo.FindByID(user.RoleID)
 	if err != nil {
@@ -130,8 +167,38 @@ func (s *UserService) Initialize() error {
 	if err != nil {
 		return err
 	}
+
 	err = s.InitializeUserRolePermissions()
-	return err
+	if err != nil {
+		return err
+	}
+
+	return s.initializeDefaultUsers()
+}
+
+func (s *UserService) initializeDefaultUsers() error {
+	var users []*dto.UserAccountDTO
+	users = append(users, dto.NewUserAccountDTO("gclkaze", "gcl", "kaze", "gclkaze@gmail.com", "thisisapass", true, models.Admin.String()))
+	users = append(users, dto.NewUserAccountDTO("mdor", "michail", "dorgiakis", "michail.dorgiakis@gmail.com", "thisisapass", true, models.User.String()))
+
+	for i := range users {
+		email := users[i].Email
+		user, err := s.accountRepo.FindByEmail(email)
+		if err != nil {
+			s.logger.Errorf("user service", "An error has occurred while searcing for user %s : %s", email, err.Error())
+			return err
+		}
+
+		if user == nil {
+			//lets add the user
+			_, err = s.CreateUserFromDTO(users[i])
+			if err != nil {
+				s.logger.Errorf("user service", "An error has occurred while adding user %s : %s", email, err.Error())
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (s *UserService) InitializeUserRolePermissions() error {

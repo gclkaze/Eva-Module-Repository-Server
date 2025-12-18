@@ -25,7 +25,6 @@ func NewDownloadHandler(service *services.ModuleService, p *properties.Propertie
 
 func (h *DownloadHandler) DownloadRelease(c *gin.Context) {
 	//the release needs to be ACCEPTED
-
 	releaseID := c.Param("releaseId")
 	releaseIDUint, err := utils.StringToUint(releaseID)
 	filename := h.defaultDistFilename
@@ -42,7 +41,7 @@ func (h *DownloadHandler) DownloadRelease(c *gin.Context) {
 	}
 
 	if rel.Status.Label != repositories.Accepted.String() {
-		c.JSON(http.StatusInternalServerError, utils.Err(err, "no release found"))
+		c.JSON(http.StatusInternalServerError, utils.Err(nil, "no release found"))
 		return
 	}
 
