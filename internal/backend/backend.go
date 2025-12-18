@@ -20,6 +20,7 @@ type EvaModuleRepositoryBackend struct {
 	userService            *services.UserService
 	moduleOwnershipService *services.ModuleOwnershipService
 	authService            *services.AuthService
+	downloadService        *services.DownloadService
 }
 
 func NewEvaModuleRepositoryBackend() *EvaModuleRepositoryBackend {
@@ -65,12 +66,17 @@ func (be *EvaModuleRepositoryBackend) initializeServices() error {
 	be.moduleService = inst
 	err = be.userService.Initialize()
 
+	be.downloadService = services.NewDownloadService(be.moduleService, be.properties)
 	be.authService = services.NewAuthService(be.db.GetUserAccountRepository(), be.db.GetDevAccountRepository(), be.properties)
 	return err
 }
 
 func (be *EvaModuleRepositoryBackend) GetModuleService() *services.ModuleService {
 	return be.moduleService
+}
+
+func (be *EvaModuleRepositoryBackend) GetDownloadService() *services.DownloadService {
+	return be.downloadService
 }
 
 func (be *EvaModuleRepositoryBackend) GetReleaseService() *services.ReleaseService {

@@ -35,7 +35,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 	router.moduleHandler = handlers.NewModuleHandler(be.GetModuleService())
 	router.releaseHandler = handlers.NewReleaseHandler(be.GetReleaseService())
 	router.authHandler = handlers.NewAuthHandler(be.GetAuthService(), be.GetDeveloperService())
-	router.downloadHandler = handlers.NewDownloadHandler(be.GetModuleService(), be.GetProperties())
+	router.downloadHandler = handlers.NewDownloadHandler(be.GetDownloadService())
 	router.middleWare = middleware.NewAuthMiddleware(be.GetDeveloperService())
 
 	r.MaxMultipartMemory = 8 << 20 // 8 MB
@@ -114,7 +114,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 
 	supervision := router.api.Group("supervise")
 	{
-		supervision.POST("/download/release/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+		supervision.GET("/download/release/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 			models.UpdateReleases,
 		})), router.downloadHandler.DownloadAnyRelease)
 
