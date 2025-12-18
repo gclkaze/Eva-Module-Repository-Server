@@ -109,7 +109,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 
 	download := router.api.Group("download")
 	{
-		download.GET("/release/:id", router.downloadHandler.DownloadRelease) //the release needs to be accepted
+		download.GET("/release/:releaseId", router.downloadHandler.DownloadRelease) //the release needs to be accepted
 	}
 
 	supervision := router.api.Group("supervise")

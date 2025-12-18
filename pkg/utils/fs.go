@@ -15,6 +15,13 @@ func FolderExists(folder string) bool {
 	return !os.IsNotExist(err)
 }
 
+func FileExists(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
+}
 func CreateFolder(folder string) error {
 	err := os.Mkdir(folder, os.ModePerm)
 	if err != nil {

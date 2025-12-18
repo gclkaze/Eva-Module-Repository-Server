@@ -43,6 +43,10 @@ func (s ReleaseService) FindByID(id uint) (*models.ModuleRelease, error) {
 	return s.repo.FindByID(id)
 }
 
+func (s ReleaseService) GetRelease(id uint) (*models.ModuleRelease, error) {
+	return s.repo.GetRelease(id)
+}
+
 func (s *ReleaseService) DeleteModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
 	if s.userService.UserHasPermission(userID, models.DeleteModules) {
 		return s.repo.DeleteModuleRelease(userID, modID, releaseID)

@@ -14,6 +14,7 @@ type ReleaseRepository interface {
 	Create(dev *models.ModuleRelease) error
 	Update(mr *models.ModuleRelease) error
 	FindByID(id uint) (*models.ModuleRelease, error)
+	GetRelease(id uint) (*models.ModuleRelease, error)
 	DeleteModuleRelease(userID uint, id uint, releaseID uint) (bool, error)
 	CancelSuggestedModuleRelease(userID uint, id uint, releaseID uint) (bool, error)
 	GetModuleRelease(id uint, releaseID uint) (*models.ModuleRelease, error)
@@ -38,6 +39,19 @@ func (r *releaseRepository) Create(mod *models.ModuleRelease) error {
 func (r releaseRepository) FindByID(id uint) (*models.ModuleRelease, error) {
 	var m models.ModuleRelease
 	err := r.db.First(&m, id).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
+
+func (r releaseRepository) GetRelease(id uint) (*models.ModuleRelease, error) {
+	var m models.ModuleRelease
+	err := r.db.Preload("Status").First(&m, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
