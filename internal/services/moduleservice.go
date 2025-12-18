@@ -420,7 +420,6 @@ func (s *ModuleService) deleteModule(userID uint, modID uint) (bool, error) {
 		if !modDeletionRes {
 			s.logger.Errorf("module service", "the module has already been deleted %d with user %d", userID, modID)
 		}
-
 		//let's remove the folder
 		if utils.FolderExists(modPath) {
 			utils.CleanFolder(modPath)
