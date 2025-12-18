@@ -51,7 +51,7 @@ func (r releaseRepository) FindByID(id uint) (*models.ModuleRelease, error) {
 
 func (r releaseRepository) GetRelease(id uint) (*models.ModuleRelease, error) {
 	var m models.ModuleRelease
-	err := r.db.Preload("Status").First(&m, id).Error
+	err := r.db.Preload("Status").Preload("Statistics").First(&m, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

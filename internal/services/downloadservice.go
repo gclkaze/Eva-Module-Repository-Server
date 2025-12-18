@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/repositories"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/magiconair/properties"
+	"gorm.io/gorm"
 )
 
 type DownloadService struct {
@@ -48,6 +50,11 @@ func (h *DownloadService) DownloadRelease(releaseID uint) (string, string, error
 	if !utils.FileExists(dest) {
 		return "", "", fmt.Errorf("couldn't find Release Artifact related to release id %d", releaseID)
 	}
+	err = h.IncreaseDownloadCounter(rel)
+	if err != nil {
+		h.service.logger.Errorf("download service", "couldn't increase the download counter for release %d, got error %s", releaseID, err.Error())
+	}
+
 	return dest, filename, nil
 }
 
@@ -74,5 +81,26 @@ func (h DownloadService) DownloadAnyRelease(releaseID uint) (string, string, err
 		return "", "", fmt.Errorf("couldn't find Release Artifact related to release id %d", releaseID)
 	}
 
+	err = h.IncreaseDownloadCounter(rel)
+	if err != nil {
+		h.service.logger.Errorf("download service", "couldn't increase the download counter for release %d, got error %s", releaseID, err.Error())
+	}
 	return dest, filename, nil
+}
+
+func (h DownloadService) IncreaseDownloadCounter(release *models.ModuleRelease) error {
+
+	db := h.service.repo.GetDB()
+	err := utils.WithGormTransaction(db, func(tx *gorm.DB) error {
+
+		if err := tx.Model(&models.ReleaseStatistics{}).
+			Where("id = ?", release.Statistics.ID).
+			UpdateColumn("download_count", gorm.Expr("download_count + 1")).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
