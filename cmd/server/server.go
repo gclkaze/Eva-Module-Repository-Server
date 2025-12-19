@@ -19,6 +19,24 @@ func NewEvaModuleRepositoryServer() *EvaModuleRepositoryServer {
 	return inst
 }
 
+func (inst *EvaModuleRepositoryServer) InitializeWithProperties(prop string) error {
+	config.InitWithProperties(prop)
+
+	inst.be = backend.NewEvaModuleRepositoryBackend()
+	inst.router = routes.NewEvaModuleRepositoryRouter()
+	error := inst.be.Initialize()
+	if error != nil {
+		return error
+	}
+
+	r := gin.Default()
+	error = inst.router.Initialize(r, inst.be)
+	if error != nil {
+		return error
+	}
+	return nil
+}
+
 func (inst *EvaModuleRepositoryServer) Initialize() error {
 	config.Init()
 
