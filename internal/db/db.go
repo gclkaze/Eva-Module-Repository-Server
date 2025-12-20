@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
@@ -98,6 +99,42 @@ func (db *EvaModuleRepositoryDatabase) Initialize(p *properties.Properties) erro
 	db.initializeRepositories()
 	error = db.initializeData()
 	return error
+}
+
+func (db *EvaModuleRepositoryDatabase) CleanDB() {
+	dbName := db.c.GetDBName()
+	if !strings.Contains(dbName, "_test") {
+		db.logger.Printf("db", "Dropping tables of db %s", dbName)
+		return
+	}
+	err := db.db.Migrator().DropTable(
+		&models.ModuleReleaseStatus{},
+		&models.ModuleOwnerType{},
+		&models.ModuleOwner{},
+		&models.UserPermission{},
+		&models.UserRole{},
+		&models.UserAccount{},
+		&models.Developer{},
+		&models.Module{},
+		&models.ModuleRelease{},
+		&models.DeveloperModuleOwner{},
+		&models.Keyword{},
+		&models.ReleaseStatistics{},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = db.db.Migrator().DropTable(
+		"user_roles",
+		"release_keywords",
+		"user_role_permissions",
+		"module_keywords",
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func (db *EvaModuleRepositoryDatabase) initializeData() error {

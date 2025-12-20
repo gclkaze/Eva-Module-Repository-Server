@@ -168,3 +168,7 @@ func (router *EvaModuleRepositoryRouter) Run() error {
 	router.r.Run(router.port)
 	return nil
 }
+
+func (router *EvaModuleRepositoryRouter) GetRouter() *gin.Engine {
+	return router.r
+}

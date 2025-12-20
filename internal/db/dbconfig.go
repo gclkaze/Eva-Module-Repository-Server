@@ -65,3 +65,7 @@ func (c *EvaModuleRepositoryDatabaseConfig) LoadFromProperties(p *properties.Pro
 func (c *EvaModuleRepositoryDatabaseConfig) GetConnectionString() string {
 	return c.connectionString
 }
+
+func (c EvaModuleRepositoryDatabaseConfig) GetDBName() string {
+	return c.dbName
+}

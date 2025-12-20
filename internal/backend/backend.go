@@ -36,6 +36,10 @@ func (be *EvaModuleRepositoryBackend) GetProperties() *properties.Properties {
 	return be.properties
 }
 
+func (be *EvaModuleRepositoryBackend) CleanDB() {
+	be.db.CleanDB()
+}
+
 func (be *EvaModuleRepositoryBackend) Initialize() error {
 	if config.TheConfigReader.IsOnError() {
 		return fmt.Errorf("couldn't read the properties file")

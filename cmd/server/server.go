@@ -19,8 +19,29 @@ func NewEvaModuleRepositoryServer() *EvaModuleRepositoryServer {
 	return inst
 }
 
-func (inst *EvaModuleRepositoryServer) InitializeWithProperties(prop string) error {
-	config.InitWithProperties(prop)
+func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesPath(prop string) error {
+	config.InitWithPropertiesPath(prop)
+
+	inst.be = backend.NewEvaModuleRepositoryBackend()
+	inst.router = routes.NewEvaModuleRepositoryRouter()
+	error := inst.be.Initialize()
+	if error != nil {
+		return error
+	}
+
+	r := gin.Default()
+	error = inst.router.Initialize(r, inst.be)
+	if error != nil {
+		return error
+	}
+	return nil
+}
+func (inst *EvaModuleRepositoryServer) CleanDB() {
+	inst.be.CleanDB()
+}
+
+func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesMap(m *map[string]string) error {
+	config.InitWithPropertiesMap(m)
 
 	inst.be = backend.NewEvaModuleRepositoryBackend()
 	inst.router = routes.NewEvaModuleRepositoryRouter()
@@ -61,4 +82,11 @@ func (inst *EvaModuleRepositoryServer) Run() error {
 	}
 	inst.router.Run()
 	return nil
+}
+
+func (inst *EvaModuleRepositoryServer) GetRouter() *gin.Engine {
+	if inst.router == nil {
+		return nil
+	}
+	return inst.router.GetRouter()
 }

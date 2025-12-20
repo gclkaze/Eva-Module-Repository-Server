@@ -26,21 +26,40 @@ func Init() {
 	}
 }
 
-func InitWithProperties(prop string) {
+func InitWithPropertiesPath(prop string) {
 	if TheConfigReader != nil {
 		return
 	}
 	TheConfigReader = &ConfigReader{}
-	TheConfigReader.error = TheConfigReader.readPropertiesFromString(prop)
+	TheConfigReader.error = TheConfigReader.readPropertiesFromPath(prop)
 	if TheConfigReader.error != nil {
 		TheConfigReader.onError = true
 	}
 }
 
-func (c *ConfigReader) readPropertiesFromString(prop string) error {
+func InitWithPropertiesMap(m *map[string]string) {
+	if TheConfigReader != nil {
+		return
+	}
+	TheConfigReader = &ConfigReader{}
+	TheConfigReader.error = TheConfigReader.readPropertiesFromMap(m)
+	if TheConfigReader.error != nil {
+		TheConfigReader.onError = true
+	}
+}
+
+func (c *ConfigReader) readPropertiesFromPath(prop string) error {
 	c.properties = properties.MustLoadFile(prop, properties.UTF8)
 	if c.properties == nil {
 		return fmt.Errorf("couldn't read application properties file %s", prop)
+	}
+	return nil
+}
+
+func (c *ConfigReader) readPropertiesFromMap(m *map[string]string) error {
+	c.properties = properties.LoadMap(*m)
+	if c.properties == nil {
+		return fmt.Errorf("couldn't read application properties map")
 	}
 	return nil
 }

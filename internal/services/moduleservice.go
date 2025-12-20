@@ -431,6 +431,25 @@ func (s *ModuleService) deleteModule(userID uint, modID uint) (bool, error) {
 	return res, err
 }
 
+func (s *ModuleService) DeleteTx(userID uint, modID uint) (bool, error) {
+	if s.releaseService.userService.UserHasPermission(userID, models.DeleteModules) {
+		return s.deleteModule(userID, modID)
+	}
+	mod, err := s.GetModule(modID)
+	if err != nil {
+		return false, err
+	}
+
+	if mod.Owner.EntityID != userID {
+		return false, fmt.Errorf("user with ID %d didn't match with the module", userID)
+	}
+
+	if mod.Owner.Type.Label != models.Dev.String() {
+		return false, fmt.Errorf("user with ID %d didn't match with the module type", userID)
+	}
+	return s.deleteModule(userID, modID)
+}
+
 func (s *ModuleService) Delete(userID uint, modID uint) (bool, error) {
 	if s.releaseService.userService.UserHasPermission(userID, models.DeleteModules) {
 		return s.deleteModule(userID, modID)
