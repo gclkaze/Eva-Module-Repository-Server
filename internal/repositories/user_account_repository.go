@@ -15,6 +15,7 @@ type UserAccountRepository interface {
 	Delete(id uint) (bool, error)
 	BanUser(userID uint) error
 	UnbanUser(userID uint) error
+	GetFirstWithRole(r *models.UserRole) (*models.UserAccount, error)
 }
 
 type userAccountRepository struct {
@@ -35,6 +36,18 @@ func (d *userAccountRepository) BanUser(userID uint) error {
 		Update("is_banned", "true").Error
 }
 
+func (d *userAccountRepository) GetFirstWithRole(r *models.UserRole) (*models.UserAccount, error) {
+	var dev models.UserAccount
+	err := d.db.Where("role_id = ?", r.ID).First(&dev).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &dev, nil
+}
+
 func (d *userAccountRepository) UnbanUser(userID uint) error {
 	return d.db.Model(&models.UserAccount{}).
 		Where("id = ?", 1).
@@ -43,7 +56,7 @@ func (d *userAccountRepository) UnbanUser(userID uint) error {
 
 func (d *userAccountRepository) FindByID(id uint) (*models.UserAccount, error) {
 	var dev models.UserAccount
-	err := d.db.First(&dev, 1).Error
+	err := d.db.First(&dev, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

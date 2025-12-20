@@ -1,0 +1,12 @@
+@Main(){
+    assignValue($res, 3)
+    assignValue($res, $res + 1)
+    assertEquals($res, 4)
+    assertEquals(4, $res)
+    assignValue($res, "Lol")
+    assertEquals("Lol", $res)
+    assertEquals($res,"Lol")
+    assertNotEquals(null, 1)
+/*    assertNotEquals(1, null)
+    assertEquals(1, null)    */
+}

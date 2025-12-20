@@ -1,0 +1,172 @@
+@Main(){
+    assignValue($first, {
+        "glossary": {
+            "title": "example glossary",
+            "GlossDiv": {
+                "title": "S",
+                "GlossList": {
+                    "GlossEntry": {
+                        "ID": "SGML",
+                        "SortAs": "SGML",
+                        "GlossTerm": "Standard Generalized Markup Language",
+                        "Acronym": "SGML",
+                        "Abbrev": "ISO 8879:1986",
+                        "GlossDef": {
+                            "para": "A meta-markup language, used to create markup languages such as DocBook.",
+                            "GlossSeeAlso": ["GML", "XML"]
+                        },
+                        "GlossSee": "markup"
+                    }
+                }
+            }
+        }
+    })
+
+    assignValue($copy, {
+        "glossary": {
+            "title": "example glossary",
+            "GlossDiv": {
+                "title": "S",
+                "GlossList": {
+                    "GlossEntry": {
+                        "ID": "SGML",
+                        "SortAs": "SGML",
+                        "GlossTerm": "Standard Generalized Markup Language",
+                        "Acronym": "SGML",
+                        "Abbrev": "ISO 8879:1986",
+                        "GlossDef": {
+                            "para": "A meta-markup language, used to create markup languages such as DocBook.",
+                            "GlossSeeAlso": ["GML", "XML"]
+                        },
+                        "GlossSee": "markup"
+                    }
+                }
+            }
+        }
+    })
+
+    assertEquals($first,$copy)
+        assignValue($second, {
+        "glossary": {
+            "title": "example glossary",
+            "GlossDiv": {
+                "title": "S",
+                "GlossList": {
+                    "GlossEntry": {
+                        "ID": "SGMLDiff",
+                        "SortAs": "SGML",
+                        "GlossTerm": "Standard Generalized Markup Language",
+                        "Acronym": "SGML",
+                        "Abbrev": "ISO 8879:1986",
+                        "GlossDef": {
+                            "para": "A meta-markup language, used to create markup languages such as DocBook.",
+                            "GlossSeeAlso": ["GML", "XML"]
+                        },
+                        "GlossSee": "markup"
+                    }
+                }
+            }
+        }
+    })
+
+    assertNotEquals($first, $second)
+
+    assertEquals({
+        "glossary": {
+            "title": "example glossary",
+            "GlossDiv": {
+                "title": "S",
+                "GlossList": {
+                    "GlossEntry": {
+                        "ID": "SGML",
+                        "SortAs": "SGML",
+                        "GlossTerm": "Standard Generalized Markup Language",
+                        "Acronym": "SGML",
+                        "Abbrev": "ISO 8879:1986",
+                        "GlossDef": {
+                            "para": "A meta-markup language, used to create markup languages such as DocBook.",
+                            "GlossSeeAlso": ["GML", "XML"]
+                        },
+                        "GlossSee": "markup"
+                    }
+                }
+            }
+        }
+    }, {
+        "glossary": {
+            "GlossDiv": {
+                "title": "S",
+                "GlossList": {
+                    "GlossEntry": {
+                        "SortAs": "SGML",
+                        "GlossTerm": "Standard Generalized Markup Language",
+                        "GlossDef": {
+                            "GlossSeeAlso": ["GML", "XML"],
+                            "para": "A meta-markup language, used to create markup languages such as DocBook."
+                        },
+                        "ID": "SGML",
+                        "GlossSee": "markup",
+                        "Acronym": "SGML",
+                        "Abbrev": "ISO 8879:1986"
+                    }
+                }
+            },
+            "title": "example glossary"
+        }
+    })
+    assertNotEquals({
+        "glossary": {
+            "missing":"in the second",
+            "title": "example glossary",
+            "GlossDiv": {
+                "title": "S",
+                "GlossList": {
+                    "GlossEntry": {
+                        "ID": "SGML",
+                        "SortAs": "SGML",
+                        "GlossTerm": "Standard Generalized Markup Language",
+                        "Acronym": "SGML",
+                        "Abbrev": "ISO 8879:1986",
+                        "GlossDef": {
+                            "para": "A meta-markup language, used to create markup languages such as DocBook.",
+                            "GlossSeeAlso": ["GML", "XML"]
+                        },
+                        "GlossSee": "markup"
+                    }
+                }
+            }
+        }
+    }, {
+        "glossary": {
+            "GlossDiv": {
+                "title": "S",
+                "GlossList": {
+                    "GlossEntry": {
+                        "SortAs": "SGML",
+                        "GlossTerm": "Standard Generalized Markup Language",
+                        "GlossDef": {
+                            "GlossSeeAlso": ["GML", "XML"],
+                            "para": "A meta-markup language, used to create markup languages such as DocBook."
+                        },
+                        "ID": "SGML",
+                        "GlossSee": "markup",
+                        "Acronym": "SGML",
+                        "Abbrev": "ISO 8879:1986"
+                    }
+                }
+            },
+            "title": "example glossary"
+        }
+    })
+
+/*
+    assignValue($res, $res + 1)
+    assertEquals($res, 4)
+    assertEquals(4, $res)
+    assignValue($res, "Lol")
+    assertEquals("Lol", $res)
+    assertEquals($res,"Lol")
+    assertNotEquals(null, 1)
+    assertNotEquals(1, null)
+    assertEquals(1, null)    */
+}

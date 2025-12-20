@@ -6,6 +6,7 @@ import (
 	"github.com/gclkaze/evamodulerepositoryserver/internal/backend"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/config"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/routes"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,6 +18,24 @@ type EvaModuleRepositoryServer struct {
 func NewEvaModuleRepositoryServer() *EvaModuleRepositoryServer {
 	inst := &EvaModuleRepositoryServer{}
 	return inst
+}
+
+func (inst *EvaModuleRepositoryServer) GetBackend() *backend.EvaModuleRepositoryBackend {
+	return inst.be
+}
+
+func (inst *EvaModuleRepositoryServer) ClearModuleFolders() {
+	p := inst.be.GetProperties()
+
+	moduleFolder := p.GetString("module_folder", "")
+	if moduleFolder != "" && utils.FolderExists(moduleFolder) {
+		utils.CleanFolder(moduleFolder)
+	}
+	releaseFolder := p.GetString("release_folder", "")
+	if releaseFolder != "" && utils.FolderExists(releaseFolder) {
+		utils.CleanFolder(releaseFolder)
+	}
+
 }
 
 func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesPath(prop string) error {

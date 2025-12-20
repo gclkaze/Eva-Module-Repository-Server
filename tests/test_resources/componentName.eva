@@ -1,0 +1,6 @@
+@Component({"id":"componentId"})
+
+@Main(){
+    assignValue($res, 3)
+    assertEquals(3, $res)
+}

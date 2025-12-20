@@ -19,13 +19,14 @@ type UserService struct {
 	permissionRepo repositories.UserPermissionRepository
 	roleRepo       repositories.UserRoleRepository
 	logger         logger.ILogger
+	p              *properties.Properties
 }
 
 func NewUserService(repo repositories.DeveloperRepository, accountRepo repositories.UserAccountRepository,
 	permissionRepo repositories.UserPermissionRepository, roleRepo repositories.UserRoleRepository,
 	p *properties.Properties) *UserService {
 	l := runtime.CreateLogger(p)
-	mod := &UserService{repo: repo, accountRepo: accountRepo, permissionRepo: permissionRepo, roleRepo: roleRepo}
+	mod := &UserService{repo: repo, accountRepo: accountRepo, permissionRepo: permissionRepo, roleRepo: roleRepo, p: p}
 	mod.logger = l
 	return mod
 }
@@ -83,6 +84,18 @@ func (s *UserService) CreateUser(handle string, firstName string, lastName strin
 		return 0, err
 	}
 	return dev.ID, nil
+}
+
+func (s *UserService) GetFirstWithRole(roleString string) (*models.UserAccount, error) {
+	role, err := s.roleRepo.FindByValue(roleString)
+	if err != nil {
+		return nil, err
+	}
+	if role == nil {
+		return nil, nil
+	}
+	ua, err := s.accountRepo.GetFirstWithRole(role)
+	return ua, err
 }
 
 func (s *UserService) CreateUserWithRole(handle string, firstName string, lastName string, email string, password string, active bool, roleString string) (uint, error) {
@@ -182,8 +195,10 @@ func (s *UserService) Initialize() error {
 
 func (s *UserService) initializeDefaultUsers() error {
 	var users []*dto.UserAccountDTO
-	users = append(users, dto.NewUserAccountDTO("gclkaze", "gcl", "kaze", "gclkaze@gmail.com", "thisisapass", true, models.Admin.String()))
-	users = append(users, dto.NewUserAccountDTO("mdor", "michail", "dorgiakis", "michail.dorgiakis@gmail.com", "thisisapass", true, models.User.String()))
+
+	defaultPassword := s.p.GetString("default_password", "thisisapass")
+	users = append(users, dto.NewUserAccountDTO("gclkaze", "gcl", "kaze", "gclkaze@gmail.com", defaultPassword, true, models.Admin.String()))
+	users = append(users, dto.NewUserAccountDTO("mdor", "michail", "dorgiakis", "michail.dorgiakis@gmail.com", defaultPassword, true, models.User.String()))
 
 	for i := range users {
 		email := users[i].Email

@@ -1,0 +1,5 @@
+@Main(){
+    assignValue($o,{"branch":"develop","username":"JenkinsMadgikUser","pwd":"M@dGJiK16U$eRDJ$nk1Ns!","host":"https://dl046.madgik.di.uoa.gr/jenkins"})
+    Jenkins::connect($jenkins,$o.host,$o.username,$o.pwd)
+    Jenkins::execute($jenkins,$res, "SC-HUB/job/DEV/job/Backend-Build",{"branch":$o.branch})
+}

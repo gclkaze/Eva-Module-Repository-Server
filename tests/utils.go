@@ -27,6 +27,10 @@ func StartServer() *gin.Engine {
 	return nil
 }
 
+func ClearModuleFolders() {
+	TheTestServer.ClearModuleFolders()
+}
+
 func TeardownServer() {
 	if TheTestServer == nil {
 		fmt.Print("test Server hasn't been initialized")
@@ -34,4 +38,8 @@ func TeardownServer() {
 	}
 
 	TheTestServer.CleanDB()
+}
+
+func GetDefaultUserPassword() string {
+	return TheTestServer.GetBackend().GetProperties().GetString("default_password", "")
 }
