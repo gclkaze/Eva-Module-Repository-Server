@@ -17,6 +17,7 @@ func StartServer() *gin.Engine {
 	currentPath, _ := os.Getwd()
 	p := path.Join(currentPath, "application_test.properties")
 	error := TheTestServer.InitializeWithPropertiesPath(p)
+	//TheTestServer.ClearModuleFolders()
 	if error != nil {
 		fmt.Println(error)
 		os.Exit(1)
@@ -38,6 +39,7 @@ func TeardownServer() {
 	}
 
 	TheTestServer.CleanDB()
+	TheTestServer.ClearModuleFolders()
 }
 
 func GetDefaultUserPassword() string {

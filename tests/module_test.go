@@ -18,7 +18,6 @@ import (
 )
 
 func setup() {
-	ClearModuleFolders()
 	StartServer()
 }
 
@@ -59,7 +58,7 @@ func userLogsIn(u *models.UserAccount, pass string, t *testing.T, r *gin.Engine)
 }
 
 func moduleCreate(title string, repr string, tags string, description string, filePath string,
-	access *models.RequestResult[models.LoginResponse], t *testing.T, r *gin.Engine) {
+	access *models.RequestResult[models.LoginResponse], t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
 
 	fields := make(map[string]string)
 	fields["title"] = title
@@ -99,17 +98,12 @@ func moduleCreate(title string, repr string, tags string, description string, fi
 
 	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s", routes.APIGroup, routes.ModulesGroup, routes.ModuleUploadEndpoint), body)
 	req.Header.Set("Authorization", "Bearer "+(*access).Value.AccessToken)
-
-	//	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
 
-	assert.Equal(t, w.Code, http.StatusOK)
-
-	s := w.Body.String()
-	fmt.Print(s)
+	return w
 }
 
 func TestModuleCreation(t *testing.T) {
@@ -126,8 +120,18 @@ func TestModuleCreation(t *testing.T) {
 
 	filePath := "test_resources/assignvalue.eva"
 
-	moduleCreate(title, repr, tags, description, filePath, resp, t, TheTestServer.GetRouter())
+	rec := moduleCreate(title, repr, tags, description, filePath, resp, t, TheTestServer.GetRouter())
 	//check response
+	assert.Equal(t, rec.Code, http.StatusOK)
+
 	//then check the module in DB
+	var respModCreation models.RequestResult[uint]
+	err = json.Unmarshal(rec.Body.Bytes(), &respModCreation)
+	assert.Equal(t, err == nil, true)
+
+	modID := respModCreation.Value
+	assert.Equal(t, modID, 1)
+
 	//check the folder
+
 }

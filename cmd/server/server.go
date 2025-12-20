@@ -30,12 +30,13 @@ func (inst *EvaModuleRepositoryServer) ClearModuleFolders() {
 	moduleFolder := p.GetString("module_folder", "")
 	if moduleFolder != "" && utils.FolderExists(moduleFolder) {
 		utils.CleanFolder(moduleFolder)
+		utils.RemoveFolder(moduleFolder)
 	}
 	releaseFolder := p.GetString("release_folder", "")
 	if releaseFolder != "" && utils.FolderExists(releaseFolder) {
 		utils.CleanFolder(releaseFolder)
+		utils.RemoveFolder(releaseFolder)
 	}
-
 }
 
 func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesPath(prop string) error {
