@@ -13,6 +13,8 @@ type UserAccountRepository interface {
 	FindByEmail(email string) (*models.UserAccount, error)
 	GetByID(id uint) (*models.UserAccount, error)
 	Delete(id uint) (bool, error)
+	BanUser(userID uint) error
+	UnbanUser(userID uint) error
 }
 
 type userAccountRepository struct {
@@ -25,6 +27,18 @@ func NewUserAccountRepository(db *gorm.DB) UserAccountRepository {
 func (d *userAccountRepository) Create(dev *models.UserAccount) error {
 	err := d.db.Create(dev).Error
 	return err
+}
+
+func (d *userAccountRepository) BanUser(userID uint) error {
+	return d.db.Model(&models.UserAccount{}).
+		Where("id = ?", 1).
+		Update("is_banned", "true").Error
+}
+
+func (d *userAccountRepository) UnbanUser(userID uint) error {
+	return d.db.Model(&models.UserAccount{}).
+		Where("id = ?", 1).
+		Update("is_banned", "false").Error
 }
 
 func (d *userAccountRepository) FindByID(id uint) (*models.UserAccount, error) {

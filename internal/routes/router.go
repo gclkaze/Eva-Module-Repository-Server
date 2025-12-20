@@ -17,12 +17,12 @@ type EvaModuleRepositoryRouter struct {
 	r    *gin.Engine
 	port string
 
-	moduleHandler   *handlers.ModuleHandler
-	downloadHandler *handlers.DownloadHandler
-	releaseHandler  *handlers.ReleaseHandler
-	authHandler     *handlers.AuthHandler
-
-	middleWare *middleware.AuthMiddleWare
+	moduleHandler    *handlers.ModuleHandler
+	downloadHandler  *handlers.DownloadHandler
+	releaseHandler   *handlers.ReleaseHandler
+	authHandler      *handlers.AuthHandler
+	superviseHandler *handlers.SuperviseHandler
+	middleWare       *middleware.AuthMiddleWare
 }
 
 func NewEvaModuleRepositoryRouter() *EvaModuleRepositoryRouter {
@@ -34,9 +34,10 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 	router.api = r.Group("/api")
 	router.moduleHandler = handlers.NewModuleHandler(be.GetModuleService())
 	router.releaseHandler = handlers.NewReleaseHandler(be.GetReleaseService())
-	router.authHandler = handlers.NewAuthHandler(be.GetAuthService(), be.GetDeveloperService())
+	router.authHandler = handlers.NewAuthHandler(be.GetAuthService(), be.GetUserService())
 	router.downloadHandler = handlers.NewDownloadHandler(be.GetDownloadService())
-	router.middleWare = middleware.NewAuthMiddleware(be.GetDeveloperService())
+	router.middleWare = middleware.NewAuthMiddleware(be.GetUserService())
+	router.superviseHandler = handlers.NewSuperviseHandler(be.GetUserService())
 
 	r.MaxMultipartMemory = 8 << 20 // 8 MB
 
@@ -133,6 +134,16 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 		supervision.POST("/pending/release/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 			models.CancelReleases,
 		})), router.releaseHandler.ChangeToPendingRelease)
+
+		supervision.POST("/ban/:userId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+			models.BanUsers,
+			models.UnbanUsers,
+		})), router.superviseHandler.BanUser)
+
+		supervision.POST("/unban/:userId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+			models.BanUsers,
+			models.UnbanUsers,
+		})), router.superviseHandler.UnbanUser)
 
 	}
 

@@ -53,7 +53,7 @@ func (be *EvaModuleRepositoryBackend) Initialize() error {
 
 func (be *EvaModuleRepositoryBackend) initializeServices() error {
 	be.moduleOwnershipService = services.NewModuleOwnershipService(be.db.GetModuleOwnerRepository(), be.db.GetModuleOwnerTypeRepository(), be.db.GetDeveloperModuleOwnerRepository())
-	be.releaseService = services.NewReleaseService(be.db.GetReleaseRepository(), be.db.GetReleaseStatusRepository(), be.moduleOwnershipService, be.GetDeveloperService(), be.properties, be.db.GetReleaseStatisticsRepository())
+	be.releaseService = services.NewReleaseService(be.db.GetReleaseRepository(), be.db.GetReleaseStatusRepository(), be.moduleOwnershipService, be.GetUserService(), be.properties, be.db.GetReleaseStatisticsRepository())
 
 	be.userService = services.NewUserService(be.db.GetDeveloperRepository(), be.db.GetUserAccountRepository(),
 		be.db.GetUserPermissionRepository(), be.db.GetUserRoleRepository(),
@@ -83,7 +83,7 @@ func (be *EvaModuleRepositoryBackend) GetReleaseService() *services.ReleaseServi
 	return be.releaseService
 }
 
-func (be *EvaModuleRepositoryBackend) GetDeveloperService() *services.UserService {
+func (be *EvaModuleRepositoryBackend) GetUserService() *services.UserService {
 	return be.userService
 }
 

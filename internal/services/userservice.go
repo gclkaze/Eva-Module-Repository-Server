@@ -132,6 +132,10 @@ func (s *UserService) GetUserPermissions(id uint) ([]models.UserPermission, erro
 	if err != nil {
 		return nil, err
 	}
+	if user != nil && user.IsBanned {
+		s.logger.Errorf("user service", "banned user tries to access with id %d", id)
+		return nil, fmt.Errorf("unknown user with id %d", id)
+	}
 	if user == nil {
 		s.logger.Errorf("user service", "unknown user with id %d", id)
 		return nil, fmt.Errorf("unknown user with id %d", id)
@@ -223,6 +227,14 @@ func (s *UserService) InitializeUserRolePermissions() error {
 
 	}
 	return nil
+}
+
+func (s *UserService) BanUser(userID uint) error {
+	return s.accountRepo.BanUser(userID)
+}
+
+func (s *UserService) UnbanUser(userID uint) error {
+	return s.accountRepo.UnbanUser(userID)
 }
 
 func (s UserService) getRolePermissions(t models.UserRoleTypeDef) []models.UserPermission {

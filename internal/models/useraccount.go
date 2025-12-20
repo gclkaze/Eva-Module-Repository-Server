@@ -11,6 +11,7 @@ type UserAccount struct {
 	Password string
 	RoleID   uint     `json:"user_id"`
 	UserRole UserRole `gorm:"foreignKey:RoleID"`
+	IsBanned bool     `gorm:"is_banned"`
 }
 
 func NewUserAccount(role *UserRole, email string, password string) *UserAccount {

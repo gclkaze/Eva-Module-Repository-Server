@@ -32,6 +32,11 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	if user != nil && user.IsBanned {
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
+		return
+	}
+
 	//need to create the user
 	if user == nil {
 		userID, createUserErr := h.userService.CreateUser(req.Handle, req.FirstName, req.LastName, req.Email, req.Password, true)
@@ -71,6 +76,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
 		return
 	}
+	if user != nil && user.IsBanned {
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
+		return
+	}
 
 	if user == nil {
 		c.JSON(http.StatusUnauthorized, utils.Err(nil, "unregistered user"))
@@ -99,6 +108,10 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 	user, err := h.service.ValidateRefreshToken(req.RefreshToken)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, utils.Err(err, "invalid refresh token"))
+		return
+	}
+	if user != nil && user.IsBanned {
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
 		return
 	}
 
