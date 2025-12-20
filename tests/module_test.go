@@ -135,3 +135,21 @@ func TestModuleCreation(t *testing.T) {
 	//check the folder
 
 }
+
+func TestModuleSuggestion(t *testing.T) {
+}
+
+func TestModuleReleaseAccept(t *testing.T) {
+}
+
+func TestModuleSuggestAndRejection(t *testing.T) {
+}
+
+func TestModuleSuggestAndCancel(t *testing.T) {
+}
+
+func TestModuleSuggestAcceptReleaseAndCancelRelease(t *testing.T) {
+}
+
+func TestModuleDeletion(t *testing.T) {
+}
