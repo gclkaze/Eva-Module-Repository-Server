@@ -18,6 +18,7 @@ type ModuleRepository interface {
 	SearchByKeywords(tags []string) ([]models.Module, error)
 	Delete(id uint) (bool, error)
 	GetDB() *gorm.DB
+	GetMaxID() (uint, error)
 }
 
 type moduleRepository struct {
@@ -70,6 +71,19 @@ func (r moduleRepository) Delete(id uint) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (r moduleRepository) GetMaxID() (uint, error) {
+	var maxID uint
+	err := r.db.
+		Model(&models.Module{}).
+		Select("COALESCE(MAX(id), 0)").
+		Scan(&maxID).Error
+
+	if err != nil {
+		return 0, err
+	}
+	return maxID, err
 }
 
 func (r *moduleRepository) Update(mod *models.Module) error {

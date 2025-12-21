@@ -31,7 +31,7 @@ func (d *developerRepository) Create(dev *models.Developer) error {
 
 func (d *developerRepository) FindByIDTx(tx *gorm.DB, id uint) (*models.Developer, error) {
 	var dev models.Developer
-	err := tx.First(&dev, 1).Error
+	err := tx.First(&dev, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -55,7 +55,7 @@ func (d *developerRepository) FindByUserAccountID(id uint) (*models.Developer, e
 
 func (d *developerRepository) FindByID(id uint) (*models.Developer, error) {
 	var dev models.Developer
-	err := d.db.First(&dev, 1).Error
+	err := d.db.First(&dev, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

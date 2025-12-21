@@ -41,7 +41,7 @@ func (d *userPermissionRepository) FindByValue(v string) (*models.UserPermission
 
 func (d *userPermissionRepository) FindByID(id uint) (*models.UserPermission, error) {
 	var dev models.UserPermission
-	err := d.db.First(&dev, 1).Error
+	err := d.db.First(&dev, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

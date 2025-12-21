@@ -368,6 +368,10 @@ func (s *ModuleService) FindByID(id uint) (*dto.ModuleDTO, error) {
 	return res, error
 }
 
+func (s *ModuleService) GetMaxID() (uint, error) {
+	return s.repo.GetMaxID()
+}
+
 func (s *ModuleService) GetModule(id uint) (*models.Module, error) {
 	result, error := s.repo.FindByID(id, true)
 	if error != nil {

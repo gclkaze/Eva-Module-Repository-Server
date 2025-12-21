@@ -2,17 +2,23 @@ package server
 
 import (
 	"fmt"
+	"path"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/backend"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/config"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/routes"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/magiconair/properties"
 )
 
 type EvaModuleRepositoryServer struct {
 	be     *backend.EvaModuleRepositoryBackend
 	router *routes.EvaModuleRepositoryRouter
+
+	moduleFolder    string
+	releaseFolder   string
+	developerFolder string
 }
 
 func NewEvaModuleRepositoryServer() *EvaModuleRepositoryServer {
@@ -27,16 +33,44 @@ func (inst *EvaModuleRepositoryServer) GetBackend() *backend.EvaModuleRepository
 func (inst *EvaModuleRepositoryServer) ClearModuleFolders() {
 	p := inst.be.GetProperties()
 
-	moduleFolder := p.GetString("module_folder", "")
-	if moduleFolder != "" && utils.FolderExists(moduleFolder) {
-		utils.CleanFolder(moduleFolder)
-		utils.RemoveFolder(moduleFolder)
+	inst.moduleFolder = p.GetString("module_folder", "")
+	if inst.moduleFolder != "" && utils.FolderExists(inst.moduleFolder) {
+		utils.CleanFolder(inst.moduleFolder)
+		utils.RemoveFolder(inst.moduleFolder)
 	}
-	releaseFolder := p.GetString("release_folder", "")
-	if releaseFolder != "" && utils.FolderExists(releaseFolder) {
-		utils.CleanFolder(releaseFolder)
-		utils.RemoveFolder(releaseFolder)
+	inst.releaseFolder = p.GetString("release_folder", "")
+	if inst.releaseFolder != "" && utils.FolderExists(inst.releaseFolder) {
+		utils.CleanFolder(inst.releaseFolder)
+		utils.RemoveFolder(inst.releaseFolder)
 	}
+
+	inst.developerFolder = p.GetString("dev_folder", "")
+	if inst.developerFolder != "" {
+		inst.developerFolder = path.Join(inst.moduleFolder, inst.developerFolder)
+	}
+	if inst.developerFolder != "" && utils.FolderExists(inst.developerFolder) {
+		utils.CleanFolder(inst.developerFolder)
+		utils.RemoveFolder(inst.developerFolder)
+	}
+}
+
+func (inst *EvaModuleRepositoryServer) setupRepositoryFolders(p *properties.Properties) {
+	inst.moduleFolder = p.GetString("module_folder", "")
+	inst.releaseFolder = p.GetString("release_folder", "")
+	inst.developerFolder = p.GetString("dev_folder", "")
+	if inst.developerFolder != "" {
+		inst.developerFolder = path.Join(inst.moduleFolder, inst.developerFolder)
+	}
+}
+
+func (inst EvaModuleRepositoryServer) GetDeveloperModuleFolder(devID uint, modID uint) string {
+	p := path.Join(inst.developerFolder, utils.UintToString(devID), utils.UintToString(modID))
+	return p
+}
+
+func (inst EvaModuleRepositoryServer) GetDeveloperFolder(devID uint) string {
+	p := path.Join(inst.developerFolder, utils.UintToString(devID))
+	return p
 }
 
 func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesPath(prop string) error {
@@ -54,6 +88,8 @@ func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesPath(prop string)
 	if error != nil {
 		return error
 	}
+
+	inst.setupRepositoryFolders(inst.be.GetProperties())
 	return nil
 }
 func (inst *EvaModuleRepositoryServer) CleanDB() {
@@ -75,6 +111,7 @@ func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesMap(m *map[string
 	if error != nil {
 		return error
 	}
+	inst.setupRepositoryFolders(inst.be.GetProperties())
 	return nil
 }
 
@@ -93,6 +130,7 @@ func (inst *EvaModuleRepositoryServer) Initialize() error {
 	if error != nil {
 		return error
 	}
+	inst.setupRepositoryFolders(inst.be.GetProperties())
 	return nil
 }
 

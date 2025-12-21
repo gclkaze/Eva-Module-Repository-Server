@@ -37,6 +37,10 @@ func (s *ReleaseService) GetUserService() *UserService {
 	return s.userService
 }
 
+func (s *ReleaseService) GetMaxID() (uint, error) {
+	return s.repo.GetMaxID()
+}
+
 func (s *ReleaseService) SetModuleService(mod *ModuleService) {
 	s.moduleService = mod
 }
@@ -92,6 +96,10 @@ func (s *ReleaseService) DeleteModuleRelease(userID uint, modID uint, releaseID 
 	}
 	s.logger.Errorf("release service", "couldn't delete user's %d Module Release folder for mod: %d and release: %d", userID, modID, releaseID)
 	return res, err
+}
+
+func (s ReleaseService) GetStatus(t repositories.ReleaseStatusTypeDef) (*models.ModuleReleaseStatus, error) {
+	return s.statusRepo.GetStatus(t)
 }
 
 func (s *ReleaseService) CancelSuggestedModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {

@@ -32,7 +32,7 @@ func (d *userAccountRepository) Create(dev *models.UserAccount) error {
 
 func (d *userAccountRepository) BanUser(userID uint) error {
 	return d.db.Model(&models.UserAccount{}).
-		Where("id = ?", 1).
+		Where("id = ?", userID).
 		Update("is_banned", "true").Error
 }
 
@@ -50,7 +50,7 @@ func (d *userAccountRepository) GetFirstWithRole(r *models.UserRole) (*models.Us
 
 func (d *userAccountRepository) UnbanUser(userID uint) error {
 	return d.db.Model(&models.UserAccount{}).
-		Where("id = ?", 1).
+		Where("id = ?", userID).
 		Update("is_banned", "false").Error
 }
 

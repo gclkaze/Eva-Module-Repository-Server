@@ -23,6 +23,7 @@ type ReleaseRepository interface {
 	SearchModuleReleasesByTags(id uint, tags []string) ([]models.ModuleRelease, error)
 	GetModuleReleasesWithStatus(id uint, statusID uint) ([]models.ModuleRelease, error)
 	GetModuleReleaseWithStatus(modID uint, releaseID uint, statusID uint) (*models.ModuleRelease, error)
+	GetMaxID() (uint, error)
 }
 
 type releaseRepository struct {
@@ -31,6 +32,19 @@ type releaseRepository struct {
 
 func NewReleaseRepository(db *gorm.DB) ReleaseRepository {
 	return &releaseRepository{db: db}
+}
+
+func (r releaseRepository) GetMaxID() (uint, error) {
+	var maxID uint
+	err := r.db.
+		Model(&models.ModuleRelease{}).
+		Select("COALESCE(MAX(id), 0)").
+		Scan(&maxID).Error
+
+	if err != nil {
+		return 0, err
+	}
+	return maxID, err
 }
 
 func (r *releaseRepository) Create(mod *models.ModuleRelease) error {
