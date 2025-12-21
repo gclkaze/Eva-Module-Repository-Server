@@ -332,6 +332,9 @@ func (s *ModuleService) SuggestUserModuleRelease(userID uint, modID uint, versio
 	if err != nil {
 		return 0, err
 	}
+	if mod == nil {
+		return 0, fmt.Errorf("couldn't find module with id %d that was suggested by user %d", modID, userID)
+	}
 
 	if mod.Owner.EntityID != userID {
 		return 0, fmt.Errorf("user with ID %d didn't match with the module", userID)

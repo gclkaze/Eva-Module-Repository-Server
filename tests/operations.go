@@ -113,3 +113,31 @@ func ModuleSuggest(modID uint, version string,
 	r.ServeHTTP(w, req)
 	return w
 }
+
+func ModuleCancelSuggestion(modID uint, releaseID uint,
+	access *models.LoginResponse, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+
+	fields := make(map[string]string)
+	fields["id"] = utils.UintToString(modID)
+	fields["releaseId"] = utils.UintToString(releaseID)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add form fields
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			assert.Equal(t, false, true)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		assert.Equal(t, false, true)
+	}
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s/%d%s/%d", routes.APIGroup, routes.ReleasesGroup, modID, routes.ReleaseCancelEndpoint, releaseID), body)
+	req.Header.Set("Authorization", "Bearer "+(*access).AccessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}

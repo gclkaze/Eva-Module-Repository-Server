@@ -104,7 +104,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 				models.DeleteMyModule,
 				models.CreateMyModule,
 				models.SuggestMyModule,
-				models.CancelReleases,
+				//	models.CancelReleases,
 			})), router.releaseHandler.CancelSuggestedRelease) // ->need to check the userID is the one that initiated it
 	}
 

@@ -119,8 +119,8 @@ func (r releaseRepository) GetModuleReleasesWithStatus(id uint, statusID uint) (
 }
 
 func (r releaseRepository) GetModuleReleaseWithStatus(id uint, releaseID uint, statusID uint) (*models.ModuleRelease, error) {
-	var result *models.ModuleRelease
-	err := r.db.Preload("Creator").Where("module_id = ? AND status_id = ? AND id = ?", id, statusID, releaseID).Find(result).Error
+	var result models.ModuleRelease
+	err := r.db.Preload("Creator").Where("module_id = ? AND status_id = ? AND id = ?", id, statusID, releaseID).First(&result).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -128,7 +128,7 @@ func (r releaseRepository) GetModuleReleaseWithStatus(id uint, releaseID uint, s
 		return nil, err
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 func (r releaseRepository) GetModuleRelease(id uint, releaseID uint) (*models.ModuleRelease, error) {
