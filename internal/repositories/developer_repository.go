@@ -43,7 +43,7 @@ func (d *developerRepository) FindByIDTx(tx *gorm.DB, id uint) (*models.Develope
 
 func (d *developerRepository) FindByUserAccountID(id uint) (*models.Developer, error) {
 	var m models.Developer
-	err := d.db.Where("user_id = ?", id).First(&m).Error
+	err := d.db.Preload("UserAccount").Where("user_id = ?", id).First(&m).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

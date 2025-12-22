@@ -24,6 +24,7 @@ type ReleaseRepository interface {
 	GetModuleReleasesWithStatus(id uint, statusID uint) ([]models.ModuleRelease, error)
 	GetModuleReleaseWithStatus(modID uint, releaseID uint, statusID uint) (*models.ModuleRelease, error)
 	GetMaxID() (uint, error)
+	GetCount() (int64, error)
 }
 
 type releaseRepository struct {
@@ -45,6 +46,18 @@ func (r releaseRepository) GetMaxID() (uint, error) {
 		return 0, err
 	}
 	return maxID, err
+}
+
+func (r releaseRepository) GetCount() (int64, error) {
+	var count int64
+	err := r.db.
+		Model(&models.ModuleRelease{}).
+		Count(&count).Error
+
+	if err != nil {
+		return 0, err
+	}
+	return count, err
 }
 
 func (r *releaseRepository) Create(mod *models.ModuleRelease) error {

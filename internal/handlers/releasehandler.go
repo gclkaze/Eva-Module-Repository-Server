@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -139,7 +140,7 @@ func (h *ReleaseHandler) CancelSuggestedRelease(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, utils.OkWithMessage(result, "Release was cancelled successfully"))
+	c.JSON(http.StatusOK, utils.OkWithMessage(result, fmt.Sprintf("Release %d was cancelled successfully", releaseIDUint)))
 }
 
 func (h *ReleaseHandler) GetModuleRelease(c *gin.Context) {

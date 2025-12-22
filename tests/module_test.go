@@ -4,10 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"os"
-	"path"
-	"strings"
 	"testing"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
@@ -17,112 +14,27 @@ import (
 	"github.com/magiconair/properties/assert"
 )
 
-func setup() {
-	StartServer()
-}
-
 func TestMain(m *testing.M) {
 	// 🔧 setup (runs once)
-	setup()
+	Setup()
 	// ▶ run all tests
 	code := m.Run()
 
 	// 🧹 teardown (runs once)
-	teardown()
+	Teardown()
 	os.Exit(code)
-}
-func teardown() {
-	TeardownServer()
-}
-
-func assertTags(ourTags []string, keywords []models.Keyword, t *testing.T) {
-	assert.Equal(t, len(ourTags), len(keywords))
-	sum := 0
-	for i := range ourTags {
-		for j := range keywords {
-			if keywords[j].Label == ourTags[i] {
-				sum += 1
-			}
-		}
-	}
-	assert.Equal(t, sum, len(ourTags))
-}
-
-func errorResultsContains(str string, rec *httptest.ResponseRecorder, t *testing.T) {
-	var errorResult models.ErrorResult
-	err := json.Unmarshal(rec.Body.Bytes(), &errorResult)
-	assert.Equal(t, err == nil, true)
-	assert.Equal(t, strings.Contains(errorResult.Details, str), true)
-}
-
-func testModuleCreation(mr *testmodels.ModuleRequest, t *testing.T) (uint, *models.LoginResponse) {
-	pass := GetDefaultUserPassword()
-	u, err := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.User.String())
-	assert.Equal(t, err == nil, true)
-	resp := UserLogsIn(u, pass, t, TheTestServer.GetRouter())
-
-	maxID, err := TheTestServer.GetBackend().GetModuleService().GetMaxID()
-	assert.Equal(t, err == nil, true)
-
-	//upload a module,
-	title := mr.Title
-	repr := mr.Repr
-	tags := mr.Tags
-	description := mr.Description
-	theFile := mr.TheFile
-	filePath := mr.FilePath
-
-	rec := ModuleCreate(title, repr, tags, description, filePath, resp, t, TheTestServer.GetRouter())
-	//check response
-	assert.Equal(t, rec.Code, http.StatusOK)
-
-	//then check the module in DB
-	var respModCreation models.RequestResult[uint]
-	err = json.Unmarshal(rec.Body.Bytes(), &respModCreation)
-	assert.Equal(t, err == nil, true)
-
-	modID := respModCreation.Value
-	assert.Equal(t, modID, maxID+1)
-
-	//check the module data
-	theMod, err := TheTestServer.GetBackend().GetModuleService().GetModule(modID)
-	assert.Equal(t, err == nil, true)
-	assert.Equal(t, theMod.Title, title)
-	assert.Equal(t, theMod.Repr, repr)
-	assert.Equal(t, theMod.ID, modID)
-	assert.Equal(t, theMod.Description, description)
-
-	//check the folder
-	//tests\modules\developers\2\1
-	moduleFolder := TheTestServer.GetDeveloperModuleFolder(u.ID, modID)
-	assert.Equal(t, utils.FolderExists(moduleFolder), true)
-	assert.Equal(t, utils.FileExists(path.Join(moduleFolder, theFile)), true)
-
-	//assert the tags
-	ourTags := strings.Split(mr.Tags, ",")
-	assertTags(ourTags, theMod.Keywords, t)
-
-	return modID, &resp.Value
 }
 
 func TestModuleCreation(t *testing.T) {
-	title := "My Super Module" + t.Name()
-	repr := "my-super-module" + t.Name()
-	tags := "super,module,tagged"
-	description := "This is a description!" + t.Name()
 	theFile := "assignvalue.eva"
-	filePath := "test_resources/" + theFile
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
 
 	testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
 }
 
 func TestModuleSuggestion(t *testing.T) {
-	title := "My Super Module To Be Suggested" + t.Name()
-	repr := "my-super-module-to-be-suggested" + t.Name()
-	tags := "super,module,tagged,suggested"
-	description := "This is a description of the Suggested Module!" + t.Name()
 	theFile := "expr_length.eva"
-	filePath := "test_resources/" + theFile
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
 
 	modID, resp := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
 
@@ -164,16 +76,12 @@ func TestModuleSuggestionWithUnknownModule(t *testing.T) {
 	rec := ModuleSuggest(666, myVersion, &resp.Value, t, TheTestServer.GetRouter())
 
 	assert.Equal(t, rec.Code, http.StatusInternalServerError)
-	errorResultsContains(fmt.Sprintf("couldn't find module with id %d that was suggested by user %d", 666, u.ID), rec, t)
+	ErrorResultsContains(fmt.Sprintf("couldn't find module with id %d that was suggested by user %d", 666, u.ID), rec, t)
 }
 
 func TestMultipleModuleSuggestion(t *testing.T) {
-	title := "My Super Module To Be Suggested " + t.Name()
-	repr := "my-super-module-to-be-suggested" + t.Name()
-	tags := "super,module,tagged,suggested"
-	description := "This is a description of the Suggested Module!" + t.Name()
 	theFile := "expr_length.eva"
-	filePath := "test_resources/" + theFile
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
 
 	modID, resp := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
 
@@ -183,21 +91,17 @@ func TestMultipleModuleSuggestion(t *testing.T) {
 	assert.Equal(t, err == nil, true)
 	rec := ModuleSuggest(modID, myVersion, resp, t, TheTestServer.GetRouter())
 
-	//this should create a new release
 	assert.Equal(t, rec.Code, http.StatusOK)
 
 	rec = ModuleSuggest(modID, myVersion, resp, t, TheTestServer.GetRouter())
 	assert.Equal(t, rec.Code, http.StatusInternalServerError)
-	errorResultsContains("there are is a pending release of that module, need to cancel, reject, accept it first to create a new release", rec, t)
+	ErrorResultsContains("there are is a pending release of that module, need to cancel, reject, accept it first to create a new release", rec, t)
 }
 
 func TestUserWithSuggestionCannotMakeNewSuggestion(t *testing.T) {
-	title := "My Super Module To Be Suggested" + t.Name()
-	repr := "my-super-module-to-be-suggested" + t.Name()
-	tags := "super,module,tagged,suggested"
-	description := "This is a description of the Suggested Module!" + t.Name()
 	theFile := "expr_length.eva"
-	filePath := "test_resources/" + theFile
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+
 	modID, resp := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
 	myVersion := "1.0.1"
 
@@ -218,24 +122,19 @@ func TestUserWithSuggestionCannotMakeNewSuggestion(t *testing.T) {
 	theOtherVersion := "2.0.1"
 	rec = ModuleSuggest(modID, theOtherVersion, resp, t, TheTestServer.GetRouter())
 	assert.Equal(t, rec.Code, http.StatusInternalServerError)
-	errorResultsContains("there are is a pending release of that module, need to cancel, reject, accept it first to create a new release", rec, t)
+	ErrorResultsContains("there are is a pending release of that module, need to cancel, reject, accept it first to create a new release", rec, t)
 }
 
 func TestCancelModuleSuggestion(t *testing.T) {
-	title := "My Super Module To Be Suggested" + t.Name()
-	repr := "my-super-module-to-be-suggested" + t.Name()
-	tags := "super,module,tagged,suggested"
-	description := "This is a description of the Suggested Module!" + t.Name()
 	theFile := "expr_length.eva"
-	filePath := "test_resources/" + theFile
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+
 	modID, resp := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
 	myVersion := "1.0.1"
 
 	maxReleaseID, err := TheTestServer.GetBackend().GetReleaseService().GetMaxID()
 	assert.Equal(t, err == nil, true)
 	rec := ModuleSuggest(modID, myVersion, resp, t, TheTestServer.GetRouter())
-
-	//this should create a new release
 	assert.Equal(t, rec.Code, http.StatusOK)
 
 	var respModSuggestCreation models.RequestResult[uint]
@@ -247,25 +146,60 @@ func TestCancelModuleSuggestion(t *testing.T) {
 
 	rec = ModuleCancelSuggestion(modID, releaseID, resp, t, TheTestServer.GetRouter())
 	assert.Equal(t, rec.Code, http.StatusOK)
+
+	BooleanResultAssert(true, fmt.Sprintf("Release %d was cancelled successfully", releaseID), rec, t)
 }
 
 func TestCancelModuleSuggestionWithUnknownModule(t *testing.T) {
+	theFile := "expr_length.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
 
+	modID, resp := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+	myVersion := "1.0.1"
+
+	count, err := TheTestServer.GetBackend().GetReleaseService().GetCount()
+	assert.Equal(t, err == nil, true)
+	rec := ModuleSuggest(modID, myVersion, resp, t, TheTestServer.GetRouter())
+	assert.Equal(t, rec.Code, http.StatusOK)
+
+	var respModSuggestCreation models.RequestResult[uint]
+	err = json.Unmarshal(rec.Body.Bytes(), &respModSuggestCreation)
+	assert.Equal(t, err == nil, true)
+
+	fmt.Printf("Value %d maxRelease ID + 1 %d", respModSuggestCreation.Value, count+1)
+	newCount, err := TheTestServer.GetBackend().GetReleaseService().GetCount()
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, newCount == count+1, true)
+	releaseID := respModSuggestCreation.Value
+
+	modID = utils.GetRandomUintNumber(666)
+	rec = ModuleCancelSuggestion(modID, releaseID, resp, t, TheTestServer.GetRouter())
+	assert.Equal(t, rec.Code, http.StatusInternalServerError)
+
+	ErrorResultsContains(fmt.Sprintf("couldn't find suggested release for mod %d with id %d ", releaseID, modID), rec, t)
 }
 
-func TestModuleReleaseAccept(t *testing.T) {
-}
+func TestCancelModuleSuggestionWithUnknownRelease(t *testing.T) {
+	theFile := "expr_length.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
 
-func TestModuleSuggestAndRejection(t *testing.T) {
-}
+	modID, resp := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+	myVersion := "1.0.1"
 
-func TestModuleSuggestAndCancel(t *testing.T) {
-}
+	maxReleaseID, err := TheTestServer.GetBackend().GetReleaseService().GetMaxID()
+	assert.Equal(t, err == nil, true)
+	rec := ModuleSuggest(modID, myVersion, resp, t, TheTestServer.GetRouter())
+	assert.Equal(t, rec.Code, http.StatusOK)
 
-func TestModuleSuggestAcceptReleaseAndCancelRelease(t *testing.T) {
-}
+	var respModSuggestCreation models.RequestResult[uint]
+	err = json.Unmarshal(rec.Body.Bytes(), &respModSuggestCreation)
+	assert.Equal(t, err == nil, true)
 
-func TestModuleDeletionWithoutBeingSuggested(t *testing.T) {
-}
-func TestSuggestedModuleDeletion(t *testing.T) {
+	assert.Equal(t, respModSuggestCreation.Value, maxReleaseID+1)
+
+	releaseID := utils.GetRandomUintNumber(666)
+	rec = ModuleCancelSuggestion(modID, releaseID, resp, t, TheTestServer.GetRouter())
+	assert.Equal(t, rec.Code, http.StatusInternalServerError)
+
+	ErrorResultsContains(fmt.Sprintf("couldn't find suggested release for mod %d with id %d ", releaseID, modID), rec, t)
 }

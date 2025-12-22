@@ -285,11 +285,8 @@ func (s UserService) getRolePermissions(t models.UserRoleTypeDef) []models.UserP
 		models.User: {
 			{Value: models.CreateMyModule.String()},
 			{Value: models.SuggestMyModule.String()},
-			{Value: models.DeleteModules.String()},
 			{Value: models.DeleteMyModule.String()},
-			{Value: models.DeleteReleases.String()},
 			{Value: models.DeleteMyRelease.String()},
-			{Value: models.UnbanUsers.String()},
 		},
 	}
 

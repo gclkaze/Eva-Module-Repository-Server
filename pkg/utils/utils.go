@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"math/rand/v2"
 	"strconv"
 
 	"github.com/gosimple/slug"
@@ -35,4 +36,12 @@ func IsValidVersion(v string) bool {
 
 func GetRepoName(input string) string {
 	return slug.Make(input)
+}
+
+func GetRandomNumber(max int) int {
+	return rand.IntN(max) // 0 ≤ n < max
+}
+
+func GetRandomUintNumber(max uint) uint {
+	return rand.UintN(max) // 0 ≤ n < max
 }

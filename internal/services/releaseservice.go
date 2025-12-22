@@ -41,6 +41,10 @@ func (s *ReleaseService) GetMaxID() (uint, error) {
 	return s.repo.GetMaxID()
 }
 
+func (s *ReleaseService) GetCount() (int64, error) {
+	return s.repo.GetCount()
+}
+
 func (s *ReleaseService) SetModuleService(mod *ModuleService) {
 	s.moduleService = mod
 }
@@ -104,7 +108,7 @@ func (s ReleaseService) GetStatus(t repositories.ReleaseStatusTypeDef) (*models.
 
 func (s *ReleaseService) CancelSuggestedModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
 
-	st, err := s.statusRepo.GetStatus(repositories.Accepted)
+	st, err := s.statusRepo.GetStatus(repositories.Pending)
 	if err != nil {
 		return false, err
 	}
@@ -112,6 +116,9 @@ func (s *ReleaseService) CancelSuggestedModuleRelease(userID uint, modID uint, r
 	release, err := s.repo.GetModuleReleaseWithStatus(modID, releaseID, st.ID)
 	if err != nil {
 		return false, err
+	}
+	if release == nil {
+		return false, fmt.Errorf("couldn't find suggested release for mod %d with id %d ", releaseID, modID)
 	}
 
 	//lets check if the user is the one suggested it
@@ -124,19 +131,7 @@ func (s *ReleaseService) CancelSuggestedModuleRelease(userID uint, modID uint, r
 			return false, fmt.Errorf("only initiator can cancel the release")
 		}
 	}
-
-	st, err = s.statusRepo.GetStatus(repositories.Canceled)
-	if err != nil {
-		return false, err
-	}
-
-	release.Status = *st
-	release.StatusID = st.ID
-	err = s.repo.Update(release)
-	if err != nil {
-		return false, err
-	}
-	return true, nil
+	return s.repo.DeleteModuleRelease(userID, modID, releaseID)
 }
 
 func (s ReleaseService) moduleHasPendingRelease(modID uint) (bool, error) {
@@ -256,6 +251,10 @@ func (s *ReleaseService) AcceptModuleRelease(userID uint, releaseID uint) (uint,
 	rel, err := s.repo.FindByID(releaseID)
 	if err != nil {
 		return 0, err
+	}
+
+	if rel == nil {
+		return 0, fmt.Errorf("couldn't find release with id %d", releaseID)
 	}
 	if rel.Status.Label == repositories.Accepted.String() {
 		return 0, fmt.Errorf("the release is already accepted")
