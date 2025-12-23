@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
 	"testing"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
@@ -123,6 +124,26 @@ func TestUserWithSuggestionCannotMakeNewSuggestion(t *testing.T) {
 	rec = ModuleSuggest(modID, theOtherVersion, resp, t, TheTestServer.GetRouter())
 	assert.Equal(t, rec.Code, http.StatusInternalServerError)
 	ErrorResultsContains("there are is a pending release of that module, need to cancel, reject, accept it first to create a new release", rec, t)
+}
+
+func TestModuleDeletionWithoutBeingSuggested(t *testing.T) {
+	theFile := "expr_length.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+	modID, resp := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+
+	rec := ModuleDelete(modID, resp, t, TheTestServer.GetRouter())
+	var respModDeletion models.RequestResult[bool]
+	err := json.Unmarshal(rec.Body.Bytes(), &respModDeletion)
+
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, respModDeletion.Value, true)
+	assert.Equal(t, respModDeletion.Result, true)
+
+	u, err := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.User.String())
+	assert.Equal(t, err == nil, true)
+	moduleFolder := TheTestServer.GetDeveloperModuleFolder(u.ID, modID)
+	assert.Equal(t, utils.FolderExists(moduleFolder), false)
+	assert.Equal(t, utils.FileExists(path.Join(moduleFolder, theFile)), false)
 }
 
 func TestCancelModuleSuggestion(t *testing.T) {

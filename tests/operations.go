@@ -114,6 +114,33 @@ func ModuleSuggest(modID uint, version string,
 	return w
 }
 
+func ModuleDelete(modID uint,
+	access *models.LoginResponse, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+
+	fields := make(map[string]string)
+	fields["id"] = utils.UintToString(modID)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add form fields
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			assert.Equal(t, false, true)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		assert.Equal(t, false, true)
+	}
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s", routes.APIGroup, routes.ModulesGroup, routes.ModuleDeleteEndpoint), body)
+	req.Header.Set("Authorization", "Bearer "+(*access).AccessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
 func ModuleCancelSuggestion(modID uint, releaseID uint,
 	access *models.LoginResponse, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
 
@@ -141,6 +168,33 @@ func ModuleCancelSuggestion(modID uint, releaseID uint,
 	r.ServeHTTP(w, req)
 	return w
 }
+func ModuleSuggestedReleaseDelete(modID uint, releaseID uint,
+	access *models.LoginResponse, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+
+	fields := make(map[string]string)
+	fields["id"] = utils.UintToString(modID)
+	fields["releaseId"] = utils.UintToString(releaseID)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add form fields
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			assert.Equal(t, false, true)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		assert.Equal(t, false, true)
+	}
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s/%d%s/%d", routes.APIGroup, routes.ReleasesGroup, modID, routes.ReleaseDeleteEndpoint, releaseID), body)
+	req.Header.Set("Authorization", "Bearer "+(*access).AccessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
 
 func ModuleReleaseAccept(releaseID uint,
 	access *models.LoginResponse, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
@@ -162,6 +216,60 @@ func ModuleReleaseAccept(releaseID uint,
 		assert.Equal(t, false, true)
 	}
 	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s/%d", routes.APIGroup, routes.SuperviseGroup, routes.SuperviseAcceptReleaseEndpoint, releaseID), body)
+	req.Header.Set("Authorization", "Bearer "+(*access).AccessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
+func ModuleReleaseReject(releaseID uint,
+	access *models.LoginResponse, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+
+	fields := make(map[string]string)
+	fields["releaseId"] = utils.UintToString(releaseID)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add form fields
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			assert.Equal(t, false, true)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		assert.Equal(t, false, true)
+	}
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s/%d", routes.APIGroup, routes.SuperviseGroup, routes.SuperviseRejectReleaseEndpoint, releaseID), body)
+	req.Header.Set("Authorization", "Bearer "+(*access).AccessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
+func ModuleReleaseCancel(releaseID uint,
+	access *models.LoginResponse, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+
+	fields := make(map[string]string)
+	fields["releaseId"] = utils.UintToString(releaseID)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add form fields
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			assert.Equal(t, false, true)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		assert.Equal(t, false, true)
+	}
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s/%d", routes.APIGroup, routes.SuperviseGroup, routes.SuperviseCancelReleaseEndpoint, releaseID), body)
 	req.Header.Set("Authorization", "Bearer "+(*access).AccessToken)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()

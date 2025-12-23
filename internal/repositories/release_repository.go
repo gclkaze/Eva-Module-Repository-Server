@@ -66,7 +66,7 @@ func (r *releaseRepository) Create(mod *models.ModuleRelease) error {
 
 func (r releaseRepository) FindByID(id uint) (*models.ModuleRelease, error) {
 	var m models.ModuleRelease
-	err := r.db.First(&m, id).Error
+	err := r.db.Preload("Status").First(&m, id).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -108,7 +108,7 @@ func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, e
 
 func (r releaseRepository) GetModuleReleasesIDs(id uint) ([]uint, error) {
 	var ids []uint
-	err := r.db.Where("module_id = ?", id).Pluck("id", &ids).Error
+	err := r.db.Model(&models.ModuleRelease{}).Where("module_id = ?", id).Pluck("id", &ids).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -145,8 +145,8 @@ func (r releaseRepository) GetModuleReleaseWithStatus(id uint, releaseID uint, s
 }
 
 func (r releaseRepository) GetModuleRelease(id uint, releaseID uint) (*models.ModuleRelease, error) {
-	var result *models.ModuleRelease
-	err := r.db.Preload("Creator").Where("module_id = ? AND id = ?", id, releaseID).Find(result).Error
+	var result models.ModuleRelease
+	err := r.db.Preload("Creator").Preload("Status").Where("module_id = ? AND id = ?", id, releaseID).First(&result).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -154,7 +154,7 @@ func (r releaseRepository) GetModuleRelease(id uint, releaseID uint) (*models.Mo
 		return nil, err
 	}
 
-	return result, nil
+	return &result, nil
 }
 
 func (r releaseRepository) DeleteModuleRelease(userID uint, id uint, releaseID uint) (bool, error) {

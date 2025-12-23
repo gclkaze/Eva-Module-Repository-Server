@@ -54,13 +54,25 @@ func (inst *EvaModuleRepositoryServer) ClearModuleFolders() {
 	}
 }
 
-func (inst *EvaModuleRepositoryServer) setupRepositoryFolders(p *properties.Properties) {
+func (inst *EvaModuleRepositoryServer) setupRepositoryFolders(p *properties.Properties) error {
 	inst.moduleFolder = p.GetString("module_folder", "")
 	inst.releaseFolder = p.GetString("release_folder", "")
 	inst.developerFolder = p.GetString("dev_folder", "")
 	if inst.developerFolder != "" {
 		inst.developerFolder = path.Join(inst.moduleFolder, inst.developerFolder)
 	}
+
+	err := utils.CreateFolder(inst.moduleFolder)
+	if err != nil {
+		return err
+	}
+	err = utils.CreateFolder(inst.developerFolder)
+	if err != nil {
+		return err
+	}
+
+	err = utils.CreateFolder(inst.releaseFolder)
+	return err
 }
 
 func (inst EvaModuleRepositoryServer) GetDeveloperModuleFolder(devID uint, modID uint) string {
@@ -89,8 +101,8 @@ func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesPath(prop string)
 		return error
 	}
 
-	inst.setupRepositoryFolders(inst.be.GetProperties())
-	return nil
+	error = inst.setupRepositoryFolders(inst.be.GetProperties())
+	return error
 }
 func (inst *EvaModuleRepositoryServer) CleanDB() {
 	inst.be.CleanDB()
@@ -111,8 +123,8 @@ func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesMap(m *map[string
 	if error != nil {
 		return error
 	}
-	inst.setupRepositoryFolders(inst.be.GetProperties())
-	return nil
+	error = inst.setupRepositoryFolders(inst.be.GetProperties())
+	return error
 }
 
 func (inst *EvaModuleRepositoryServer) Initialize() error {
@@ -130,8 +142,8 @@ func (inst *EvaModuleRepositoryServer) Initialize() error {
 	if error != nil {
 		return error
 	}
-	inst.setupRepositoryFolders(inst.be.GetProperties())
-	return nil
+	error = inst.setupRepositoryFolders(inst.be.GetProperties())
+	return error
 }
 
 func (inst *EvaModuleRepositoryServer) Run() error {

@@ -37,6 +37,9 @@ func (s *ReleaseService) GetUserService() *UserService {
 	return s.userService
 }
 
+func (s ReleaseService) GetDefaultDistFilename() string {
+	return s.defaultDistFilename
+}
 func (s *ReleaseService) GetMaxID() (uint, error) {
 	return s.repo.GetMaxID()
 }
@@ -56,10 +59,27 @@ func (s ReleaseService) GetRelease(id uint) (*models.ModuleRelease, error) {
 	return s.repo.GetRelease(id)
 }
 
+func (s ReleaseService) GetReleaseFolder(rel *models.ModuleRelease) (string, error) {
+	mod, err := s.moduleService.FindByID(rel.ModuleID)
+	if err != nil {
+		return "", err
+	}
+	pname := utils.GetRepoName(mod.Repr)
+	path := fmt.Sprintf("%s/%s/%s", s.moduleService.releaseFolder, pname, rel.Version)
+	return path, nil
+}
+
 func (s *ReleaseService) removeModuleReleaseFolder(modID uint, releaseID uint) (bool, error) {
 	release, err := s.repo.GetModuleRelease(modID, releaseID)
 	if err != nil {
 		return false, err
+	}
+
+	if release == nil {
+		return false, fmt.Errorf("couldn't find release with mod %d and id %d", modID, releaseID)
+	}
+	if release.Status.Label == repositories.Pending.String() {
+		return true, nil
 	}
 
 	err = s.cleanReleaseFolder(release)
@@ -72,10 +92,10 @@ func (s *ReleaseService) removeModuleReleaseFolder(modID uint, releaseID uint) (
 
 func (s *ReleaseService) DeleteModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
 	if s.userService.UserHasPermission(userID, models.DeleteModules) {
-		res, err := s.repo.DeleteModuleRelease(userID, modID, releaseID)
-		if res && err != nil {
+		res, err := s.removeModuleReleaseFolder(modID, releaseID)
+		if res && err == nil {
 			//lets remove the release folder
-			return s.removeModuleReleaseFolder(modID, releaseID)
+			return s.repo.DeleteModuleRelease(userID, modID, releaseID)
 		}
 		s.logger.Errorf("release service", "couldn't delete Module Release folder for mod: %d and release: %d", modID, releaseID)
 		return res, err
@@ -93,10 +113,10 @@ func (s *ReleaseService) DeleteModuleRelease(userID uint, modID uint, releaseID 
 		return false, fmt.Errorf("only initiator can delete the release")
 	}
 
-	res, err := s.repo.DeleteModuleRelease(userID, modID, releaseID)
-	if res && err != nil {
+	res, err := s.removeModuleReleaseFolder(modID, releaseID)
+	if res && err == nil {
 		//lets remove the release folder
-		return s.removeModuleReleaseFolder(modID, releaseID)
+		return s.repo.DeleteModuleRelease(userID, modID, releaseID)
 	}
 	s.logger.Errorf("release service", "couldn't delete user's %d Module Release folder for mod: %d and release: %d", userID, modID, releaseID)
 	return res, err
@@ -260,6 +280,11 @@ func (s *ReleaseService) AcceptModuleRelease(userID uint, releaseID uint) (uint,
 		return 0, fmt.Errorf("the release is already accepted")
 	}
 
+	//the release can be on pending only
+	if rel.Status.Label != repositories.Pending.String() {
+		return 0, fmt.Errorf("the release needs to be on pending state in order to be accepted")
+	}
+
 	st, err := s.statusRepo.GetStatus(repositories.Accepted)
 	if err != nil {
 		return 0, err
@@ -312,6 +337,8 @@ func (s *ReleaseService) createReleaseFolder(rel *models.ModuleRelease) error {
 		return err
 	}
 
+	s.logger.Printf("release service", "created dist folder %s\n", dest)
+
 	return nil
 }
 
@@ -324,10 +351,13 @@ func (s *ReleaseService) cleanReleaseFolder(rel *models.ModuleRelease) error {
 
 	dest := s.moduleService.GetModuleReleasePath(mod, rel)
 	if utils.FolderExists(dest) {
-		return utils.CleanFolder(dest)
+		err = utils.CleanFolder(dest)
+		if err != err {
+			return err
+		}
 	}
 
-	return nil
+	return utils.RemoveFolder(dest)
 }
 
 func (s *ReleaseService) RejectModuleRelease(userID uint, releaseID uint) (uint, error) {
@@ -335,8 +365,18 @@ func (s *ReleaseService) RejectModuleRelease(userID uint, releaseID uint) (uint,
 	if err != nil {
 		return 0, err
 	}
+
+	if rel == nil {
+		return 0, fmt.Errorf("couldn't find release with id %d", releaseID)
+	}
+
 	if rel.Status.Label == repositories.Rejected.String() {
 		return 0, fmt.Errorf("the release is already rejected")
+	}
+
+	//the release can be on pending only, anything else should be an error
+	if rel.Status.Label != repositories.Pending.String() {
+		return 0, fmt.Errorf("the release needs to be on pending state in order to be rejected")
 	}
 
 	st, err := s.statusRepo.GetStatus(repositories.Rejected)
@@ -358,9 +398,18 @@ func (s *ReleaseService) CancelModuleRelease(userID uint, releaseID uint) (uint,
 	if err != nil {
 		return 0, err
 	}
+	if rel == nil {
+		return 0, fmt.Errorf("couldn't find release with id %d", releaseID)
+	}
 	if rel.Status.Label == repositories.Canceled.String() {
 		return 0, fmt.Errorf("the release is already canceled")
 	}
+
+	//the release can be on accepted only, anything else should be an error
+	if rel.Status.Label != repositories.Accepted.String() {
+		return 0, fmt.Errorf("the release needs to be on accepted state in order to be cancelled")
+	}
+
 	st, err := s.statusRepo.GetStatus(repositories.Canceled)
 	if err != nil {
 		return 0, err
@@ -386,9 +435,18 @@ func (s *ReleaseService) ChangeToPendingModuleRelease(userID uint, releaseID uin
 	if err != nil {
 		return 0, err
 	}
+	if rel == nil {
+		return 0, fmt.Errorf("couldn't find release with id %d", releaseID)
+	}
 	if rel.Status.Label == repositories.Pending.String() {
 		return 0, fmt.Errorf("the release is already pending")
 	}
+
+	//the release can be on accepted or cancelled , anything else should be an error
+	if rel.Status.Label != repositories.Accepted.String() && rel.Status.Label != repositories.Canceled.String() {
+		return 0, fmt.Errorf("the release needs to be on accepted/cancelled state in order to be changed back to pending")
+	}
+
 	st, err := s.statusRepo.GetStatus(repositories.Pending)
 	if err != nil {
 		return 0, err

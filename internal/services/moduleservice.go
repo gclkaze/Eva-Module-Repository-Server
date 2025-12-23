@@ -413,7 +413,7 @@ func (s *ModuleService) deleteModule(userID uint, modID uint) (bool, error) {
 	}
 
 	res, err := s.deleteModuleReleases(userID, modID)
-	if res && err != nil {
+	if res && err == nil {
 		//let's delete also the module's folder
 		dmo, dmoErr := s.ownershipService.FindDeveloperModuleOwner(&mod.Owner)
 		if dmoErr != nil {
@@ -430,6 +430,7 @@ func (s *ModuleService) deleteModule(userID uint, modID uint) (bool, error) {
 		//let's remove the folder
 		if utils.FolderExists(modPath) {
 			utils.CleanFolder(modPath)
+			utils.RemoveFolder(modPath)
 		}
 		//lets remove the dmo
 		return s.ownershipService.Delete(dmo.ID)

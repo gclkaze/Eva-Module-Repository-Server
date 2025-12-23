@@ -124,3 +124,51 @@ func testModuleCreation(mr *testmodels.ModuleRequest, t *testing.T) (uint, *mode
 
 	return modID, &resp.Value
 }
+
+func ReleaseFolderShouldExist(expected bool, theRelease *models.ModuleRelease, t *testing.T) {
+	p, err := TheTestServer.GetBackend().GetReleaseService().GetReleaseFolder(theRelease)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, utils.FolderExists(p), expected)
+	assert.Equal(t, utils.FileExists(path.Join(p, TheTestServer.GetBackend().GetReleaseService().GetDefaultDistFilename())), expected)
+}
+
+func ModuleSuggestedBySimpleUser(t *testing.T) *models.RequestResult[uint] {
+	theFile := "assignvalue.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+
+	modID, res := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+	version := "11.1.1"
+
+	rec := ModuleSuggest(modID, version, res, t, TheTestServer.GetRouter())
+	assert.Equal(t, rec.Code, http.StatusOK)
+
+	var respModSuggestCreation models.RequestResult[uint]
+	err := json.Unmarshal(rec.Body.Bytes(), &respModSuggestCreation)
+	assert.Equal(t, err == nil, true)
+
+	return &respModSuggestCreation
+}
+
+func ModuleSuggestedBySimpleUserGetAllInfo(t *testing.T) (uint, *models.RequestResult[uint]) {
+	theFile := "assignvalue.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+
+	modID, res := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+	version := "11.1.1"
+
+	rec := ModuleSuggest(modID, version, res, t, TheTestServer.GetRouter())
+	assert.Equal(t, rec.Code, http.StatusOK)
+
+	var respModSuggestCreation models.RequestResult[uint]
+	err := json.Unmarshal(rec.Body.Bytes(), &respModSuggestCreation)
+	assert.Equal(t, err == nil, true)
+
+	return modID, &respModSuggestCreation
+}
+
+func ModuleCreated(t *testing.T) (uint, *models.LoginResponse) {
+	theFile := "assignvalue.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+
+	return testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+}

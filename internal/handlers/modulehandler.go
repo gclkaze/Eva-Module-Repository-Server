@@ -35,7 +35,7 @@ func (h *ModuleHandler) FindByID(c *gin.Context) {
 }
 
 func (h *ModuleHandler) Delete(c *gin.Context) {
-	id := c.Param("id")
+	id := c.PostForm("id")
 	userID := c.GetUint("userId")
 	idUint, err := utils.StringToUint(id)
 	if err != nil {
