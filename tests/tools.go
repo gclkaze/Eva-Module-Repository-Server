@@ -149,12 +149,82 @@ func ModuleSuggestedBySimpleUser(t *testing.T) *models.RequestResult[uint] {
 	return &respModSuggestCreation
 }
 
+func ModuleSuggestedBySimpleUseWithMultipleVersions(versions []string, t *testing.T) []*models.RequestResult[uint] {
+	theFile := "assignvalue.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+
+	modID, res := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+
+	var respModSuggestions []*models.RequestResult[uint]
+
+	for i := range versions {
+		rec := ModuleSuggest(modID, versions[i], res, t, TheTestServer.GetRouter())
+		assert.Equal(t, rec.Code, http.StatusOK)
+
+		var respModSuggestCreation models.RequestResult[uint]
+		err := json.Unmarshal(rec.Body.Bytes(), &respModSuggestCreation)
+		assert.Equal(t, err == nil, true)
+
+		respModSuggestions = append(respModSuggestions, &respModSuggestCreation)
+	}
+	return respModSuggestions
+}
+
+/*func ModuleSuggestedBySimpleUseWithMultipleVersionsGetAllInfo(versions []string, t *testing.T) (uint, []*models.RequestResult[uint]) {
+	theFile := "assignvalue.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+
+	modID, res := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+
+	var respModSuggestions []*models.RequestResult[uint]
+
+	for i := range versions {
+		rec := ModuleSuggest(modID, versions[i], res, t, TheTestServer.GetRouter())
+		assert.Equal(t, rec.Code, http.StatusOK)
+
+		var respModSuggestCreation models.RequestResult[uint]
+		err := json.Unmarshal(rec.Body.Bytes(), &respModSuggestCreation)
+		assert.Equal(t, err == nil, true)
+
+		respModSuggestions = append(respModSuggestions, &respModSuggestCreation)
+	}
+	return modID, respModSuggestions
+}*/
+
 func ModuleSuggestedBySimpleUserGetAllInfo(t *testing.T) (uint, *models.RequestResult[uint]) {
 	theFile := "assignvalue.eva"
 	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
 
 	modID, res := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
 	version := "11.1.1"
+
+	rec := ModuleSuggest(modID, version, res, t, TheTestServer.GetRouter())
+	assert.Equal(t, rec.Code, http.StatusOK)
+
+	var respModSuggestCreation models.RequestResult[uint]
+	err := json.Unmarshal(rec.Body.Bytes(), &respModSuggestCreation)
+	assert.Equal(t, err == nil, true)
+
+	return modID, &respModSuggestCreation
+}
+
+func ModuleSuggestedBySimpleUserGetAllInfoWithVersion(version string, t *testing.T) (uint, *models.RequestResult[uint]) {
+	theFile := "assignvalue.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+
+	modID, res := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+
+	rec := ModuleSuggest(modID, version, res, t, TheTestServer.GetRouter())
+	assert.Equal(t, rec.Code, http.StatusOK)
+
+	var respModSuggestCreation models.RequestResult[uint]
+	err := json.Unmarshal(rec.Body.Bytes(), &respModSuggestCreation)
+	assert.Equal(t, err == nil, true)
+
+	return modID, &respModSuggestCreation
+}
+
+func ModuleSuggestedBySimpleUserGetAllInfoWithSpecificVersion(modID uint, res *models.LoginResponse, version string, t *testing.T) (uint, *models.RequestResult[uint]) {
 
 	rec := ModuleSuggest(modID, version, res, t, TheTestServer.GetRouter())
 	assert.Equal(t, rec.Code, http.StatusOK)

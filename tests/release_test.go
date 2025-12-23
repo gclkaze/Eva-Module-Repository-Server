@@ -120,7 +120,6 @@ func TestModuleSuggestAcceptReleaseAndCancelRelease(t *testing.T) {
 
 func TestSuggestedModuleReleaseDeletion(t *testing.T) {
 	user := UserLogin(t)
-
 	modID, respModSuggestCreation := ModuleSuggestedBySimpleUserGetAllInfo(t)
 
 	rec := ModuleSuggestedReleaseDelete(modID, respModSuggestCreation.Value, &user.Value, t, TheTestServer.GetRouter())
@@ -199,5 +198,113 @@ func TestAcceptedReleaseDeletionBySimpleUser(t *testing.T) {
 	assert.Equal(t, utils.FileExists(distFile), false)
 }
 
+func TestModuleReleaseAcceptMultipleVersions(t *testing.T) {
+	versions := []string{
+		"1.0.0",
+		"2.0.0",
+		"3.0.0",
+	}
+	res := AdminLogin(t)
+	modID, resp := ModuleCreated(t)
+
+	var releaseIDS []uint
+	for i := range versions {
+
+		version := versions[i]
+		_, respModSuggestCreation := ModuleSuggestedBySimpleUserGetAllInfoWithSpecificVersion(modID, resp, version, t)
+
+		releaseID := respModSuggestCreation.Value
+		releaseIDS = append(releaseIDS, releaseID)
+
+		rec := ModuleReleaseAccept(releaseID, &res.Value, t, TheTestServer.GetRouter())
+		assert.Equal(t, rec.Code, http.StatusOK)
+
+		theRelease, err := TheTestServer.GetBackend().GetReleaseService().GetRelease(respModSuggestCreation.Value)
+		assert.Equal(t, err == nil, true)
+		assert.Equal(t, theRelease.ID == respModSuggestCreation.Value, true)
+		assert.Equal(t, theRelease.Status.Label == repositories.Accepted.String(), true)
+
+		ReleaseFolderShouldExist(true, theRelease, t)
+	}
+	theReleases, err := TheTestServer.GetBackend().GetReleaseService().GetModuleReleases(modID)
+	assert.Equal(t, err == nil, true)
+
+	sum := 0
+	for i := range releaseIDS {
+		for j := range theReleases {
+			if theReleases[j].ID == releaseIDS[i] {
+				sum += 1
+
+				releaseVersion := theReleases[j].Version
+				for k := range versions {
+					if versions[k] == releaseVersion {
+						sum += 1
+						break
+					}
+				}
+				break
+			}
+		}
+	}
+
+	assert.Equal(t, sum, len(releaseIDS)*2)
+}
+
+func TestModuleReleaseAcceptSameVersions(t *testing.T) {
+	versions := []string{
+		"1.0.0",
+		"1.0.0",
+	}
+	res := AdminLogin(t)
+	modID, resp := ModuleCreated(t)
+
+	var releaseIDS []uint
+	for i := range versions {
+
+		version := versions[i]
+		_, respModSuggestCreation := ModuleSuggestedBySimpleUserGetAllInfoWithSpecificVersion(modID, resp, version, t)
+
+		releaseID := respModSuggestCreation.Value
+		releaseIDS = append(releaseIDS, releaseID)
+
+		rec := ModuleReleaseAccept(releaseID, &res.Value, t, TheTestServer.GetRouter())
+		assert.Equal(t, rec.Code, http.StatusInternalServerError)
+		//assert message
+
+		theRelease, err := TheTestServer.GetBackend().GetReleaseService().GetRelease(respModSuggestCreation.Value)
+		assert.Equal(t, err == nil, true)
+		assert.Equal(t, theRelease.ID == respModSuggestCreation.Value, true)
+		assert.Equal(t, theRelease.Status.Label == repositories.Accepted.String(), true)
+
+		ReleaseFolderShouldExist(true, theRelease, t)
+	}
+	theReleases, err := TheTestServer.GetBackend().GetReleaseService().GetModuleReleases(modID)
+	assert.Equal(t, err == nil, true)
+
+	sum := 0
+	for i := range releaseIDS {
+		for j := range theReleases {
+			if theReleases[j].ID == releaseIDS[i] {
+				sum += 1
+
+				releaseVersion := theReleases[j].Version
+				for k := range versions {
+					if versions[k] == releaseVersion {
+						sum += 1
+						break
+					}
+				}
+				break
+			}
+		}
+	}
+
+	assert.Equal(t, sum, 2)
+}
+
 //module with multiple releases -> DELETE :) By Simple User
 //module with multiple releases -> DELETE :) By Admin
+//suggest a module with a given version -> accept it -> suggest another one with the given version
+
+//upload zero files
+//login register tests
