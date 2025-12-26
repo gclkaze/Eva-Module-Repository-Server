@@ -6,3 +6,5 @@ clean:
 	rm *.exe
 run:
 	go run main.go	
+testCoverage:
+	go test -cover ./...

@@ -3,3 +3,6 @@ tests/modules
 tests/releases
 tests/modules/*
 tests/releases/*
+.vscode
+
+coverage.out
