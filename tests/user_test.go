@@ -68,7 +68,7 @@ func TestKnownUserAttemptsToRegister(t *testing.T) {
 // login tests
 func TestUserLoginNoPayload(t *testing.T) {
 	w := UserLoginRaw("", "", t, TheTestServer.GetRouter())
-	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Equal(t, w.Code, http.StatusUnauthorized)
 }
 
 func TestUserLoginNoPassword(t *testing.T) {
@@ -89,7 +89,7 @@ func TestUnknownUserAttemptsToLogin(t *testing.T) {
 // refresh
 func TestUserRefreshNoPayload(t *testing.T) {
 	w := UserRefresh("", t, TheTestServer.GetRouter())
-	assert.Equal(t, w.Code, http.StatusBadRequest)
+	assert.Equal(t, w.Code, http.StatusUnauthorized)
 }
 
 func TestUserRefreshInvalidRefreshToken(t *testing.T) {

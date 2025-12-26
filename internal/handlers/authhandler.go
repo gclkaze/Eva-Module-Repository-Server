@@ -135,6 +135,10 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 
+	if user == nil {
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
+		return
+	}
 	access, refresh, err := h.service.GenerateTokens(user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.Err(err, "failed to generate tokens"))
