@@ -40,6 +40,44 @@ func UserLogsIn(u *models.UserAccount, pass string, t *testing.T, r *gin.Engine)
 	return &resp
 }
 
+// UserRegister sends a registration request to the test router and returns the recorder
+func UserRegister(body *models.LoginRequest, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+	var buf *bytes.Buffer
+	if body != nil {
+		b, _ := json.Marshal(body)
+		buf = bytes.NewBuffer(b)
+	} else {
+		buf = bytes.NewBuffer(nil)
+	}
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s", routes.APIGroup, routes.AuthGroup, routes.RegisterEndpoint), buf)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
+// UserRefresh sends a refresh token request and returns the recorder
+func UserRefresh(refreshToken string, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+	body := map[string]string{"refreshToken": refreshToken}
+	b, _ := json.Marshal(body)
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s", routes.APIGroup, routes.AuthGroup, routes.RefreshEndpoint), bytes.NewBuffer(b))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
+// UserLoginRaw sends a login request with email/password and returns the recorder
+func UserLoginRaw(email, password string, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+	body := map[string]string{"email": email, "password": password}
+	b, _ := json.Marshal(body)
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s", routes.APIGroup, routes.AuthGroup, routes.LoginEndpoint), bytes.NewBuffer(b))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
 func ModuleCreate(title string, repr string, tags string, description string, filePath string,
 	access *models.RequestResult[models.LoginResponse], t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
 
