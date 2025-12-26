@@ -69,6 +69,10 @@ func (s ReleaseService) GetReleaseFolder(rel *models.ModuleRelease) (string, err
 	return path, nil
 }
 
+func (s ReleaseService) GetModuleReleaseByVersion(id uint, version string) (*models.ModuleRelease, error) {
+	return s.repo.GetModuleReleaseByVersion(id, version)
+}
+
 func (s *ReleaseService) removeModuleReleaseFolder(modID uint, releaseID uint) (bool, error) {
 	release, err := s.repo.GetModuleRelease(modID, releaseID)
 	if err != nil {
@@ -91,20 +95,25 @@ func (s *ReleaseService) removeModuleReleaseFolder(modID uint, releaseID uint) (
 }
 
 func (s *ReleaseService) DeleteModuleRelease(userID uint, modID uint, releaseID uint) (bool, error) {
-	if s.userService.UserHasPermission(userID, models.DeleteModules) {
-		res, err := s.removeModuleReleaseFolder(modID, releaseID)
-		if res && err == nil {
-			//lets remove the release folder
-			return s.repo.DeleteModuleRelease(userID, modID, releaseID)
-		}
-		s.logger.Errorf("release service", "couldn't delete Module Release folder for mod: %d and release: %d", modID, releaseID)
-		return res, err
-	}
-
 	release, err := s.repo.GetModuleRelease(modID, releaseID)
 	if err != nil {
 		return false, err
 	}
+	if release == nil {
+		s.logger.Printf("release service", "user %d requested unknown release %d to be deleted for module %d", userID, releaseID, modID)
+		return false, fmt.Errorf("unknown release %d", releaseID)
+	}
+
+	if s.userService.UserHasPermission(userID, models.DeleteModules) {
+		res, rerr := s.removeModuleReleaseFolder(modID, releaseID)
+		if res && rerr == nil {
+			//lets remove the release folder
+			return s.repo.DeleteModuleRelease(userID, modID, releaseID)
+		}
+		s.logger.Errorf("release service", "couldn't delete Module Release folder for mod: %d and release: %d", modID, releaseID)
+		return res, rerr
+	}
+
 	acc, err := s.userService.GetDevelopersUserAccount(&release.Creator)
 	if err != nil {
 		return false, err
@@ -210,7 +219,6 @@ func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Modul
 		return 0, err
 	}
 
-	//res, err = s.userHasPendingRelease(devID)
 	return newRelease.ID, nil
 }
 
@@ -288,6 +296,21 @@ func (s *ReleaseService) AcceptModuleRelease(userID uint, releaseID uint) (uint,
 	st, err := s.statusRepo.GetStatus(repositories.Accepted)
 	if err != nil {
 		return 0, err
+	}
+
+	//is there another one with the same version same module ?
+	//if yes, we need to delete it.
+	finding, err := s.repo.FindByModuleIDAndVersionExceptOne(rel.ID, rel.ModuleID, rel.Version)
+	if err != nil {
+		return 0, err
+	}
+
+	if finding != nil {
+		s.logger.Printf("release service", "Release %d of module %d will be replaced with the same but new Release of Version %s\n", rel.ID, rel.ModuleID, rel.Version)
+		deletionResult, deletionErr := s.repo.DeleteModuleRelease(userID, finding.ModuleID, finding.ID)
+		if !deletionResult && deletionErr != nil {
+			return 0, deletionErr
+		}
 	}
 
 	rel.Status = *st

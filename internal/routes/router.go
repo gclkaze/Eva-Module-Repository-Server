@@ -2,12 +2,14 @@ package routes
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/backend"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/config"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/handlers"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/middleware"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,11 +25,19 @@ type EvaModuleRepositoryRouter struct {
 	authHandler      *handlers.AuthHandler
 	superviseHandler *handlers.SuperviseHandler
 	middleWare       *middleware.AuthMiddleWare
+	uploadLimit      int64
 }
 
 func NewEvaModuleRepositoryRouter() *EvaModuleRepositoryRouter {
 	inst := &EvaModuleRepositoryRouter{}
+	inst.uploadLimit = 8 << 20 // 8 MB
 	return inst
+}
+
+func (router *EvaModuleRepositoryRouter) SetUploadFileLimit(limit int64) int64 {
+	old := router.uploadLimit
+	router.uploadLimit = limit
+	return old
 }
 
 func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.EvaModuleRepositoryBackend) error {
@@ -38,8 +48,7 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 	router.downloadHandler = handlers.NewDownloadHandler(be.GetDownloadService())
 	router.middleWare = middleware.NewAuthMiddleware(be.GetUserService())
 	router.superviseHandler = handlers.NewSuperviseHandler(be.GetUserService())
-
-	r.MaxMultipartMemory = 8 << 20 // 8 MB
+	r.MaxMultipartMemory = router.uploadLimit
 
 	authGroup := router.api.Group(AuthGroup)
 	{
@@ -65,6 +74,16 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 			router.moduleHandler.Delete) //needs userID to be passed
 
 		modules.POST(ModuleUploadEndpoint, router.middleWare.AuthMiddleware(be.GetJWTSecret()),
+
+			router.middleWare.MaxBodySize(r.MaxMultipartMemory),
+			func(c *gin.Context) {
+				_, err := c.MultipartForm()
+				if err != nil {
+					c.JSON(http.StatusRequestEntityTooLarge, utils.Err(err, "file too large"))
+					return
+				}
+			},
+
 			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 				models.DeleteMyModule,
 				models.CreateMyModule,
@@ -170,4 +189,8 @@ func (router *EvaModuleRepositoryRouter) Run() error {
 
 func (router *EvaModuleRepositoryRouter) GetRouter() *gin.Engine {
 	return router.r
+}
+
+func (router *EvaModuleRepositoryRouter) GetMiddleware() *middleware.AuthMiddleWare {
+	return router.middleWare
 }

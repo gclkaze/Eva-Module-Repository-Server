@@ -25,6 +25,8 @@ type ReleaseRepository interface {
 	GetModuleReleaseWithStatus(modID uint, releaseID uint, statusID uint) (*models.ModuleRelease, error)
 	GetMaxID() (uint, error)
 	GetCount() (int64, error)
+	FindByModuleIDAndVersionExceptOne(ID uint, modID uint, version string) (*models.ModuleRelease, error)
+	GetModuleReleaseByVersion(id uint, version string) (*models.ModuleRelease, error)
 }
 
 type releaseRepository struct {
@@ -106,6 +108,18 @@ func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, e
 	return results, nil
 }
 
+func (r releaseRepository) GetModuleReleaseByVersion(id uint, version string) (*models.ModuleRelease, error) {
+	var result models.ModuleRelease
+	err := r.db.Where("module_id = ? AND version = ?", id, version).Find(&result).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
 func (r releaseRepository) GetModuleReleasesIDs(id uint) ([]uint, error) {
 	var ids []uint
 	err := r.db.Model(&models.ModuleRelease{}).Where("module_id = ?", id).Pluck("id", &ids).Error
@@ -116,6 +130,19 @@ func (r releaseRepository) GetModuleReleasesIDs(id uint) ([]uint, error) {
 		return nil, err
 	}
 	return ids, nil
+}
+
+func (r releaseRepository) FindByModuleIDAndVersionExceptOne(ID uint, modID uint, version string) (*models.ModuleRelease, error) {
+	var result models.ModuleRelease
+	err := r.db.Where("id != ? AND module_id = ? AND version = ?", ID, modID, version).First(&result).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, nil
 }
 
 func (r releaseRepository) GetModuleReleasesWithStatus(id uint, statusID uint) ([]models.ModuleRelease, error) {

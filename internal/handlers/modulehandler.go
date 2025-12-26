@@ -65,14 +65,25 @@ func (h *ModuleHandler) Upload(c *gin.Context) {
 	}
 
 	// Handle file upload
-	file, err := c.FormFile("file")
+	_, err := c.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, utils.Err(err, "Uploaded file is empty"))
 		return
 	}
 
+	form, err := c.MultipartForm()
+	if err != nil && strings.Contains(err.Error(), "http: request body too large") {
+		c.JSON(http.StatusRequestEntityTooLarge, utils.Err(err, "file too large"))
+		return
+	}
+	files, ok := form.File["file"]
+	if !ok {
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Uploaded file is empty"))
+		return
+	}
+
 	// Call service to create module
-	id, err := h.service.CreateModuleTx(userID, title, description, repr, file, tags, c)
+	id, err := h.service.CreateModuleTx(userID, title, description, repr, files, tags, c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't upload module"))
 		return

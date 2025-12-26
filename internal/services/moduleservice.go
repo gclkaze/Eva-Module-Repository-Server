@@ -91,6 +91,22 @@ func (s ModuleService) GetReleasePath(mod *models.Module, release *models.Module
 	return path
 }
 
+func (s ModuleService) GetReleaseBasePath(mod *models.Module) string {
+	mName := utils.GetRepoName(mod.Repr)
+	path := fmt.Sprintf("%s/%s", s.releaseFolder, mName)
+	return path
+}
+
+func (s ModuleService) GetReleaseBasePathWithName(name string) string {
+	path := fmt.Sprintf("%s/%s", s.releaseFolder, name)
+	return path
+}
+
+func (s ModuleService) GetReleaseBasePathWithNameAndVersion(name string, version string) string {
+	path := fmt.Sprintf("%s/%s/%s", s.releaseFolder, name, version)
+	return path
+}
+
 func (s ModuleService) GetModuleReleasePath(mod *models.Module, release *models.ModuleRelease) string {
 	devPath := s.GetReleasePath(mod, release)
 	version := release.Version
@@ -168,12 +184,16 @@ func (s *ModuleService) CreateModuleTx(
 	title string,
 	descr string,
 	repr string,
-	file *multipart.FileHeader,
+	files []*multipart.FileHeader,
 	tags string,
 	c *gin.Context,
 ) (uint, error) {
 
-	if file == nil {
+	if files == nil {
+		return 0, fmt.Errorf("no module file was provided")
+	}
+
+	if len(files) == 0 {
 		return 0, fmt.Errorf("no module file was provided")
 	}
 
@@ -247,10 +267,14 @@ func (s *ModuleService) CreateModuleTx(
 		return 0, err
 	}
 
-	filePath := fmt.Sprintf("%s/%s", modPath, file.Filename)
-	if err := c.SaveUploadedFile(file, filePath); err != nil {
-		s.logger.Errorf("module_service", "%s", err)
-		return 0, err
+	for i := range files {
+		file := files[i]
+		filePath := fmt.Sprintf("%s/%s", modPath, file.Filename)
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			s.logger.Errorf("module_service", "%s", err)
+			return 0, err
+		}
+
 	}
 
 	return mod.ID, nil
@@ -431,6 +455,16 @@ func (s *ModuleService) deleteModule(userID uint, modID uint) (bool, error) {
 		if utils.FolderExists(modPath) {
 			utils.CleanFolder(modPath)
 			utils.RemoveFolder(modPath)
+		}
+
+		//does this module has any releases ?
+		//we need to remove also these
+		modpath := s.GetReleaseBasePath(mod)
+		if utils.FolderExists(modpath) {
+			err = utils.RemoveFolder(modpath)
+			if err != nil {
+				s.logger.Errorf("module service", "couldn't remove module folder %s while removing module with ID %d ", modpath, modID)
+			}
 		}
 		//lets remove the dmo
 		return s.ownershipService.Delete(dmo.ID)

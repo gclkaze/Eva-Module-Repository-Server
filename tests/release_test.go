@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"testing"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
@@ -163,7 +164,8 @@ func TestAcceptedReleaseDeletion(t *testing.T) {
 	assert.Equal(t, theRelease == nil, true)
 
 	assert.Equal(t, utils.FolderExists(releasePath), false)
-	assert.Equal(t, utils.FileExists(distFile), false)
+	//	assert.Equal(t, utils.FileExists(distFile), false)
+	assert.Equal(t, utils.FileExists(path.Join(releasePath, distFile)), false)
 
 }
 func TestAcceptedReleaseDeletionBySimpleUser(t *testing.T) {
@@ -195,7 +197,8 @@ func TestAcceptedReleaseDeletionBySimpleUser(t *testing.T) {
 	assert.Equal(t, theRelease == nil, true)
 
 	assert.Equal(t, utils.FolderExists(releasePath), false)
-	assert.Equal(t, utils.FileExists(distFile), false)
+	//	assert.Equal(t, utils.FileExists(distFile), false)
+	assert.Equal(t, utils.FileExists(path.Join(releasePath, distFile)), false)
 }
 
 func TestModuleReleaseAcceptMultipleVersions(t *testing.T) {
@@ -255,6 +258,7 @@ func TestModuleReleaseAcceptSameVersions(t *testing.T) {
 		"1.0.0",
 		"1.0.0",
 	}
+	t.Helper()
 	res := AdminLogin(t)
 	modID, resp := ModuleCreated(t)
 
@@ -265,11 +269,9 @@ func TestModuleReleaseAcceptSameVersions(t *testing.T) {
 		_, respModSuggestCreation := ModuleSuggestedBySimpleUserGetAllInfoWithSpecificVersion(modID, resp, version, t)
 
 		releaseID := respModSuggestCreation.Value
-		releaseIDS = append(releaseIDS, releaseID)
-
 		rec := ModuleReleaseAccept(releaseID, &res.Value, t, TheTestServer.GetRouter())
-		assert.Equal(t, rec.Code, http.StatusInternalServerError)
-		//assert message
+		releaseIDS = append(releaseIDS, releaseID)
+		assert.Equal(t, rec.Code, http.StatusOK)
 
 		theRelease, err := TheTestServer.GetBackend().GetReleaseService().GetRelease(respModSuggestCreation.Value)
 		assert.Equal(t, err == nil, true)
@@ -302,9 +304,184 @@ func TestModuleReleaseAcceptSameVersions(t *testing.T) {
 	assert.Equal(t, sum, 2)
 }
 
-//module with multiple releases -> DELETE :) By Simple User
-//module with multiple releases -> DELETE :) By Admin
-//suggest a module with a given version -> accept it -> suggest another one with the given version
+// module with multiple releases -> DELETE the Module :) By Simple User
+func TestModuleDeletionOnMultipleVersions(t *testing.T) {
+	versions := []string{
+		"1.0.0",
+		"2.0.0",
+		"3.3.3",
+	}
+	modID := ModuleVersionsCreated(versions, t)
+	theModule, err := TheTestServer.GetBackend().GetModuleService().GetModule(modID)
+	assert.Equal(t, err == nil, true)
 
-//upload zero files
-//login register tests
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithName(theModule.Repr)), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[0])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[1])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[2])), true)
+
+	pass := GetDefaultUserPassword()
+	u, err := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.User.String())
+	assert.Equal(t, err == nil, true)
+	resp := UserLogsIn(u, pass, t, TheTestServer.GetRouter())
+
+	rec := ModuleDelete(modID, &resp.Value, t, TheTestServer.GetRouter())
+	var respModDeletion models.RequestResult[bool]
+	err = json.Unmarshal(rec.Body.Bytes(), &respModDeletion)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, respModDeletion.Value, true)
+	assert.Equal(t, respModDeletion.Result, true)
+
+	assert.Equal(t, err == nil, true)
+	moduleFolder := TheTestServer.GetDeveloperModuleFolder(u.ID, modID)
+	assert.Equal(t, utils.FolderExists(moduleFolder), false)
+	assert.Equal(t, utils.FileExists(TheTestServer.GetReleaseBasePathWithName(theModule.Repr)), false)
+}
+
+// module with multiple releases -> DELETE the Module :) By Admin
+func TestModuleDeletionOnMultipleVersionsByAdmin(t *testing.T) {
+	versions := []string{
+		"1.0.0",
+		"2.0.0",
+		"3.3.3",
+	}
+	modID := ModuleVersionsCreated(versions, t)
+	theModule, err := TheTestServer.GetBackend().GetModuleService().GetModule(modID)
+	assert.Equal(t, err == nil, true)
+
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithName(theModule.Repr)), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[0])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[1])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[2])), true)
+
+	u, err := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.User.String())
+	assert.Equal(t, err == nil, true)
+	resp := AdminLogin(t)
+
+	rec := ModuleDelete(modID, &resp.Value, t, TheTestServer.GetRouter())
+	var respModDeletion models.RequestResult[bool]
+	err = json.Unmarshal(rec.Body.Bytes(), &respModDeletion)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, respModDeletion.Value, true)
+	assert.Equal(t, respModDeletion.Result, true)
+
+	assert.Equal(t, err == nil, true)
+	moduleFolder := TheTestServer.GetDeveloperModuleFolder(u.ID, modID)
+	assert.Equal(t, utils.FolderExists(moduleFolder), false)
+	assert.Equal(t, utils.FileExists(TheTestServer.GetReleaseBasePathWithName(theModule.Repr)), false)
+}
+
+// module with multiple releases -> DELETE a single release
+func TestModuleSingleReleaseDeletion(t *testing.T) {
+	versions := []string{
+		"1.0.0",
+		"2.0.0",
+		"3.3.3",
+	}
+	modID := ModuleVersionsCreated(versions, t)
+	theModule, err := TheTestServer.GetBackend().GetModuleService().GetModule(modID)
+	assert.Equal(t, err == nil, true)
+
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithName(theModule.Repr)), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[0])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[1])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[2])), true)
+
+	pass := GetDefaultUserPassword()
+	u, err := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.User.String())
+	assert.Equal(t, err == nil, true)
+	resp := UserLogsIn(u, pass, t, TheTestServer.GetRouter())
+
+	theRelease, err := TheTestServer.GetBackend().GetReleaseService().GetModuleReleaseByVersion(modID, versions[1])
+	assert.Equal(t, err == nil, true)
+
+	releasePath, _ := TheTestServer.GetBackend().GetReleaseService().GetReleaseFolder(theRelease)
+	distFile := TheTestServer.GetBackend().GetReleaseService().GetDefaultDistFilename()
+
+	assert.Equal(t, utils.FolderExists(releasePath), true)
+	assert.Equal(t, utils.FileExists(path.Join(releasePath, distFile)), true)
+
+	rec := ModuleSuggestedReleaseDelete(modID, theRelease.ID, &resp.Value, t, TheTestServer.GetRouter())
+	assert.Equal(t, rec.Code, http.StatusOK)
+
+	var response models.RequestResult[bool]
+	err = json.Unmarshal(rec.Body.Bytes(), &response)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, response.Value && response.Result, true)
+
+	theRelease, err = TheTestServer.GetBackend().GetReleaseService().GetRelease(theRelease.ID)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, theRelease == nil, true)
+
+	assert.Equal(t, utils.FolderExists(releasePath), false)
+	assert.Equal(t, utils.FileExists(path.Join(releasePath, distFile)), false)
+}
+
+// module with multiple releases -> DELETE a single release that does not exist :)
+func TestModuleSingleReleaseDeletionWithUnknownVersion(t *testing.T) {
+	versions := []string{
+		"1.0.0",
+		"2.0.0",
+		"3.3.3",
+	}
+	modID := ModuleVersionsCreated(versions, t)
+	theModule, err := TheTestServer.GetBackend().GetModuleService().GetModule(modID)
+	assert.Equal(t, err == nil, true)
+
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithName(theModule.Repr)), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[0])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[1])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theModule.Repr, versions[2])), true)
+
+	pass := GetDefaultUserPassword()
+	u, err := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.User.String())
+	assert.Equal(t, err == nil, true)
+	resp := UserLogsIn(u, pass, t, TheTestServer.GetRouter())
+
+	assert.Equal(t, err == nil, true)
+	distFile := TheTestServer.GetBackend().GetReleaseService().GetDefaultDistFilename()
+	rec := ModuleSuggestedReleaseDelete(modID, 10001, &resp.Value, t, TheTestServer.GetRouter())
+	assert.Equal(t, rec.Code, http.StatusInternalServerError)
+
+	var response models.ErrorResult
+	err = json.Unmarshal(rec.Body.Bytes(), &response)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, response.Details == "unknown release 10001", true)
+
+	for i := range versions {
+		theRelease, err := TheTestServer.GetBackend().GetReleaseService().GetModuleReleaseByVersion(modID, versions[i])
+		releasePath, _ := TheTestServer.GetBackend().GetReleaseService().GetReleaseFolder(theRelease)
+		assert.Equal(t, err == nil, true)
+		assert.Equal(t, theRelease != nil, true)
+
+		assert.Equal(t, utils.FolderExists(releasePath), true)
+		assert.Equal(t, utils.FileExists(path.Join(releasePath, distFile)), true)
+
+	}
+}
+
+// suggest a module with a given version -> accept it -> suggest another one with the given version
+func TestMultipleModulesSameVersions(t *testing.T) {
+	versions := []string{
+		"1.0.0",
+		"2.0.0",
+		"3.3.3",
+	}
+	firstModID := NamedModuleVersionsCreated("first", versions, t)
+	theFirstModule, err := TheTestServer.GetBackend().GetModuleService().GetModule(firstModID)
+	assert.Equal(t, err == nil, true)
+
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithName(theFirstModule.Repr)), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theFirstModule.Repr, versions[0])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theFirstModule.Repr, versions[1])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theFirstModule.Repr, versions[2])), true)
+
+	secondModID := NamedModuleVersionsCreated("second", versions, t)
+	theSecondModule, err := TheTestServer.GetBackend().GetModuleService().GetModule(secondModID)
+	assert.Equal(t, err == nil, true)
+
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithName(theFirstModule.Repr)), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theSecondModule.Repr, versions[0])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theSecondModule.Repr, versions[1])), true)
+	assert.Equal(t, utils.FolderExists(TheTestServer.GetReleaseBasePathWithNameAndVersion(theSecondModule.Repr, versions[2])), true)
+}

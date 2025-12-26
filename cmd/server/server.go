@@ -85,6 +85,20 @@ func (inst EvaModuleRepositoryServer) GetDeveloperFolder(devID uint) string {
 	return p
 }
 
+func (inst EvaModuleRepositoryServer) GetReleaseBasePathWithName(name string) string {
+	return inst.be.GetModuleService().GetReleaseBasePathWithName(name)
+}
+
+func (inst *EvaModuleRepositoryServer) SetUploadFileLimit(limit int64) int64 {
+	old := inst.router.GetRouter().MaxMultipartMemory
+	inst.router.SetUploadFileLimit(limit)
+	inst.router.GetRouter().Use(inst.router.GetMiddleware().MaxBodySize(limit))
+	return old
+}
+
+func (inst EvaModuleRepositoryServer) GetReleaseBasePathWithNameAndVersion(name string, version string) string {
+	return inst.be.GetModuleService().GetReleaseBasePathWithNameAndVersion(name, version)
+}
 func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesPath(prop string) error {
 	config.InitWithPropertiesPath(prop)
 
@@ -104,6 +118,28 @@ func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesPath(prop string)
 	error = inst.setupRepositoryFolders(inst.be.GetProperties())
 	return error
 }
+
+func (inst *EvaModuleRepositoryServer) ResetRouterWithUploadLimit(prop string, limit int64) (int64, error) {
+	config.InitWithPropertiesPath(prop)
+
+	inst.be = backend.NewEvaModuleRepositoryBackend()
+	inst.router = routes.NewEvaModuleRepositoryRouter()
+	old := inst.router.SetUploadFileLimit(limit)
+	error := inst.be.Initialize()
+	if error != nil {
+		return old, error
+	}
+
+	r := gin.Default()
+	error = inst.router.Initialize(r, inst.be)
+	if error != nil {
+		return old, error
+	}
+
+	error = inst.setupRepositoryFolders(inst.be.GetProperties())
+	return old, error
+}
+
 func (inst *EvaModuleRepositoryServer) CleanDB() {
 	inst.be.CleanDB()
 }

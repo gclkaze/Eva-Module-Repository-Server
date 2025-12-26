@@ -9,3 +9,12 @@ type ModuleRequest struct {
 	TheFile     string
 	FilePath    string
 }
+
+type ModuleRequestMultipleFiles struct {
+	Title       string
+	Repr        string
+	Tags        string
+	Description string
+	TheFiles    []string
+	FilePath    []string
+}

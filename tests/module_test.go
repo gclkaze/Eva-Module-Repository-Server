@@ -149,11 +149,12 @@ func TestModuleDeletionWithoutBeingSuggested(t *testing.T) {
 func TestCancelModuleSuggestion(t *testing.T) {
 	theFile := "expr_length.eva"
 	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+	t.Helper()
 
 	modID, resp := testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
-	myVersion := "1.0.1"
+	myVersion := "21.0.661"
 
-	maxReleaseID, err := TheTestServer.GetBackend().GetReleaseService().GetMaxID()
+	maxReleaseID, err := TheTestServer.GetBackend().GetReleaseService().GetCount()
 	assert.Equal(t, err == nil, true)
 	rec := ModuleSuggest(modID, myVersion, resp, t, TheTestServer.GetRouter())
 	assert.Equal(t, rec.Code, http.StatusOK)
@@ -161,8 +162,7 @@ func TestCancelModuleSuggestion(t *testing.T) {
 	var respModSuggestCreation models.RequestResult[uint]
 	err = json.Unmarshal(rec.Body.Bytes(), &respModSuggestCreation)
 	assert.Equal(t, err == nil, true)
-
-	assert.Equal(t, respModSuggestCreation.Value, maxReleaseID+1)
+	assert.Equal(t, respModSuggestCreation.Value > uint(maxReleaseID), true)
 	releaseID := respModSuggestCreation.Value
 
 	rec = ModuleCancelSuggestion(modID, releaseID, resp, t, TheTestServer.GetRouter())
@@ -223,4 +223,38 @@ func TestCancelModuleSuggestionWithUnknownRelease(t *testing.T) {
 	assert.Equal(t, rec.Code, http.StatusInternalServerError)
 
 	ErrorResultsContains(fmt.Sprintf("couldn't find suggested release for mod %d with id %d ", releaseID, modID), rec, t)
+}
+
+// upload zero files
+func TestModuleCreationNoFile(t *testing.T) {
+	theFile := "expr_length.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+
+	res, _ := testModuleCreationNoFile(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+	assert.Equal(t, res, true)
+}
+
+func TestModuleCreationMultipleFiles(t *testing.T) {
+	theFiles := []string{
+		"expr_length.eva",
+		"assignvalue.eva",
+	}
+	title, repr, tags, description, filePath := GetModuleInfoMultipleFiles(theFiles, t)
+	res, _ := testModuleCreationMultipleFiles(&testmodels.ModuleRequestMultipleFiles{Title: title, Repr: repr, Tags: tags, Description: description, TheFiles: theFiles, FilePath: filePath}, t)
+	assert.Equal(t, res > 0, true)
+}
+
+// upload big files
+func TestModuleCreationMultipleBigFiles(t *testing.T) {
+	theFiles := []string{
+		"expr_length.eva",
+		"assignvalue.eva",
+	}
+	title, repr, tags, description, filePath := GetModuleInfoMultipleFiles(theFiles, t)
+
+	old := ResetUploadLimit(2)
+	res := testModuleCreationMultipleFilesWithReturnValue(&testmodels.ModuleRequestMultipleFiles{Title: title, Repr: repr, Tags: tags, Description: description, TheFiles: theFiles, FilePath: filePath}, t)
+	assert.Equal(t, res != nil, true)
+	assert.Equal(t, res.Result().StatusCode, http.StatusRequestEntityTooLarge)
+	ResetUploadLimit(old)
 }

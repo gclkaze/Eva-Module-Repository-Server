@@ -86,6 +86,85 @@ func ModuleCreate(title string, repr string, tags string, description string, fi
 	return w
 }
 
+func ModuleCreateMultipleFiles(title string, repr string, tags string, description string, filePaths []string,
+	access *models.RequestResult[models.LoginResponse], t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+
+	fields := make(map[string]string)
+	fields["title"] = title
+	fields["repr"] = repr
+	fields["tags"] = tags
+	fields["description"] = description
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add form fields
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			assert.Equal(t, false, true)
+		}
+	}
+
+	for i := range filePaths {
+		file, err := os.Open(filePaths[i])
+		if err != nil {
+			assert.Equal(t, false, true)
+		}
+		defer file.Close()
+
+		part, err := writer.CreateFormFile("file", file.Name())
+		if err != nil {
+			assert.Equal(t, false, true)
+		}
+
+		if _, err := io.Copy(part, file); err != nil {
+			assert.Equal(t, false, true)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		assert.Equal(t, false, true)
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s", routes.APIGroup, routes.ModulesGroup, routes.ModuleUploadEndpoint), body)
+	req.Header.Set("Authorization", "Bearer "+(*access).Value.AccessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
+func ModuleCreateNoFile(title string, repr string, tags string, description string,
+	access *models.RequestResult[models.LoginResponse], t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+
+	fields := make(map[string]string)
+	fields["title"] = title
+	fields["repr"] = repr
+	fields["tags"] = tags
+	fields["description"] = description
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add form fields
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			assert.Equal(t, false, true)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		assert.Equal(t, false, true)
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s", routes.APIGroup, routes.ModulesGroup, routes.ModuleUploadEndpoint), body)
+	req.Header.Set("Authorization", "Bearer "+(*access).Value.AccessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
 func ModuleSuggest(modID uint, version string,
 	access *models.LoginResponse, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
 

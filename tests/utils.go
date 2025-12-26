@@ -11,6 +11,7 @@ import (
 )
 
 var TheTestServer *server.EvaModuleRepositoryServer
+var OldUploadLimit int64
 
 func StartServer() *gin.Engine {
 	TheTestServer = server.NewEvaModuleRepositoryServer()
@@ -26,6 +27,19 @@ func StartServer() *gin.Engine {
 
 	}
 	return nil
+}
+
+func ResetUploadLimit(limit int64) int64 {
+	currentPath, _ := os.Getwd()
+	p := path.Join(currentPath, "application_test.properties")
+	old, error := TheTestServer.ResetRouterWithUploadLimit(p, limit)
+
+	if error != nil {
+		fmt.Println(error)
+		os.Exit(1)
+	}
+
+	return old
 }
 
 func ClearModuleFolders() {
