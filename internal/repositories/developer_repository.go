@@ -31,6 +31,7 @@ type DeveloperRepository interface {
 	Create(k *models.Developer) error
 	FindByID(id uint) (*models.Developer, error)
 	FindByUserAccountID(id uint) (*models.Developer, error)
+	FindByHandle(string) (*models.Developer, error)
 	Delete(id uint) (bool, error)
 	Ban(id uint) (bool, error)
 	FindByIDTx(tx *gorm.DB, id uint) (*models.Developer, error)
@@ -61,6 +62,17 @@ func (d *developerRepository) FindByIDTx(tx *gorm.DB, id uint) (*models.Develope
 	return &dev, nil
 }
 
+func (d *developerRepository) FindByHandle(handle string) (*models.Developer, error) {
+	var dev models.Developer
+	err := d.db.Preload("UserAccount").Where("handle = ?", handle).First(&dev).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &dev, nil
+}
 func (d *developerRepository) FindByUserAccountID(id uint) (*models.Developer, error) {
 	var m models.Developer
 	err := d.db.Preload("UserAccount").Where("user_id = ?", id).First(&m).Error

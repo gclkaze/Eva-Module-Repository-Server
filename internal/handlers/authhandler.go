@@ -22,6 +22,7 @@ package handlers
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/services"
@@ -45,8 +46,58 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	pwd := strings.TrimSpace(req.Password)
+	if pwd == "" {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("No password provided"))
+		return
+	}
+
+	email := strings.TrimSpace(req.Email)
+	if email == "" {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("No email provided"))
+		return
+	}
+
+	if !utils.IsValidEmail(email) {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("Invalid email form"))
+		return
+	}
+
+	firstName := strings.TrimSpace(req.FirstName)
+	if firstName == "" {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("No first name provided"))
+		return
+	}
+
+	if !utils.IsValidName(firstName) {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("Invalid first name provided"))
+		return
+	}
+
+	lastName := strings.TrimSpace(req.LastName)
+	if lastName == "" {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("No last name provided"))
+		return
+	}
+
+	if !utils.IsValidName(lastName) {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("Invalid last name provided"))
+		return
+	}
+
+	handle := strings.TrimSpace(req.Handle)
+	if handle == "" {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("No handle provided"))
+		return
+	}
+
+	if !utils.IsValidHandle(handle) {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("Invalid handle provided"))
+		return
+	}
+
 	var user *models.UserAccount
-	user, err := h.service.Authenticate(req.Email, req.Password)
+	user, err := h.service.Authenticate(email, pwd)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
 		return
@@ -59,17 +110,20 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 	//need to create the user
 	if user == nil {
-		userID, createUserErr := h.userService.CreateUser(req.Handle, req.FirstName, req.LastName, req.Email, req.Password, true)
+		userID, createUserErr := h.userService.CreateUser(handle, firstName, lastName, email, pwd, true)
 		if createUserErr != nil {
-			c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't create user"))
+			c.JSON(http.StatusInternalServerError, utils.ErrWithSimpleMessage("Couldn't register user, "+createUserErr.Error()))
 			return
 		}
 		userResult, findUserErr := h.userService.FindUserByID(userID)
 		if findUserErr != nil {
-			c.JSON(http.StatusInternalServerError, utils.Err(findUserErr, "Couldn't find user ID"))
+			c.JSON(http.StatusInternalServerError, utils.ErrWithSimpleMessage("Couldn't register user, "+findUserErr.Error()))
 			return
 		}
 		user = userResult
+	} else {
+		c.JSON(http.StatusInternalServerError, utils.ErrWithSimpleMessage("Couldn't register user, the email is used"))
+		return
 	}
 
 	access, refresh, err := h.service.GenerateTokens(user)
@@ -91,7 +145,24 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	user, err := h.service.Authenticate(req.Email, req.Password)
+	pwd := strings.TrimSpace(req.Password)
+	if pwd == "" {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("No password provided"))
+		return
+	}
+
+	email := strings.TrimSpace(req.Email)
+	if email == "" {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("No email provided"))
+		return
+	}
+
+	if !utils.IsValidEmail(email) {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("Invalid email form"))
+		return
+	}
+
+	user, err := h.service.Authenticate(email, pwd)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
 		return

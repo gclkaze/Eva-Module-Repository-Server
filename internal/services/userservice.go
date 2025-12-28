@@ -81,6 +81,23 @@ func (s *UserService) Create(handle string, firstName string, lastName string, e
 }
 
 func (s *UserService) CreateUser(handle string, firstName string, lastName string, email string, password string, active bool) (uint, error) {
+	//the email and the handle need to be unique
+	hFound, err := s.repo.FindByHandle(handle)
+	if err != nil {
+		return 0, err
+	}
+	if hFound != nil {
+		return 0, fmt.Errorf("the handle is used")
+	}
+
+	eFound, err := s.accountRepo.FindByEmail(email)
+	if err != nil {
+		return 0, err
+	}
+	if eFound != nil {
+		return 0, fmt.Errorf("the email is used")
+	}
+
 	var dev *models.Developer
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

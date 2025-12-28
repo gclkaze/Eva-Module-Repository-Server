@@ -59,3 +59,16 @@ func Err(err error, msg string) models.ErrorResult {
 
 	return resp
 }
+
+func ErrWithSimpleMessage(msg string) models.ErrorResult {
+	resp := models.ErrorResult{
+		Result: false,
+		Error:  msg,
+	}
+
+	if gin.Mode() == gin.DebugMode {
+		resp.Details = msg
+	}
+
+	return resp
+}

@@ -21,67 +21,24 @@
 package utils
 
 import (
-	"math/rand/v2"
+	"net/mail"
 	"regexp"
-	"strconv"
-
-	"github.com/gosimple/slug"
-	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/mod/semver"
+	"strings"
 )
 
-var nameRegex = regexp.MustCompile(`^[\p{L}]+([\p{L}\s'-]*[\p{L}]+)?$`)
-var handleRegex = regexp.MustCompile(
-	`^[a-zA-Z][a-zA-Z0-9]*(?:[._-][a-zA-Z0-9]+)*$`,
-)
+var domainRegex = regexp.MustCompile(`^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
-func StringToUint(str string) (uint, error) {
-	// Convert string to uint64 first
-	num, err := strconv.ParseUint(str, 10, 64)
+func IsValidEmail(email string) bool {
+	addr, err := mail.ParseAddress(email)
 	if err != nil {
-		return 0, err
-	}
-
-	// Cast to uint
-	u := uint(num)
-	return u, err
-}
-
-func UintToString(i uint) string {
-	return strconv.FormatUint(uint64(i), 10)
-}
-
-func HashPassword(pw string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)
-	return string(bytes), err
-}
-
-func IsValidVersion(v string) bool {
-	return semver.IsValid("v" + v)
-}
-
-func GetRepoName(input string) string {
-	return slug.Make(input)
-}
-
-func GetRandomNumber(max int) int {
-	return rand.IntN(max) // 0 ≤ n < max
-}
-
-func GetRandomUintNumber(max uint) uint {
-	return rand.UintN(max) // 0 ≤ n < max
-}
-
-func IsValidName(name string) bool {
-	if len(name) < 1 || len(name) > 50 {
 		return false
 	}
-	return nameRegex.MatchString(name)
-}
 
-func IsValidHandle(handle string) bool {
-	if len(handle) < 3 || len(handle) > 30 {
+	parts := strings.Split(addr.Address, "@")
+	if len(parts) != 2 {
 		return false
 	}
-	return handleRegex.MatchString(handle)
+
+	domain := parts[1]
+	return domainRegex.MatchString(domain)
 }

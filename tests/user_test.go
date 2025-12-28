@@ -41,7 +41,7 @@ func TestRegisterNewUser(t *testing.T) {
 	body := models.LoginRequest{
 		Email:     "newuser+" + t.Name() + "@example.com",
 		Password:  "testpass",
-		Handle:    "hn",
+		Handle:    "hnnn",
 		FirstName: "Fn",
 		LastName:  "Ln",
 	}
@@ -58,22 +58,204 @@ func TestKnownUserAttemptsToRegister(t *testing.T) {
 
 	// default user seeded by Initialize
 	body := models.LoginRequest{
-		Email:    "gclkaze@gmail.com",
-		Password: "thisisapass",
+		Email:     "gclkaze@gmail.com",
+		Password:  "thisisapass",
+		FirstName: "A first name",
+		LastName:  "A Last name",
+		Handle:    "hnnn22",
 	}
 	w := UserRegister(&body, t, TheTestServer.GetRouter())
-	assert.Equal(t, w.Code, http.StatusOK)
+	assert.Equal(t, w.Code, http.StatusInternalServerError)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Error == "Couldn't register user, the email is used", true)
+}
+
+// check for erroneous first name and last name
+func TestRegisterNewUserWithErroneousFirstNameLastName(t *testing.T) {
+
+	body := models.LoginRequest{
+		Email:     "newuser+" + t.Name() + "@example.com",
+		Password:  "testpass",
+		Handle:    "hn",
+		FirstName: "asd ?? asd '!2",
+		LastName:  "alastname",
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "Invalid first name provided", true)
+}
+
+func TestRegisterNewUserWithErroneousLastName(t *testing.T) {
+
+	body := models.LoginRequest{
+		Email:     "newuser+" + t.Name() + "@example.com",
+		Password:  "testpass",
+		Handle:    "hn",
+		FirstName: "george",
+		LastName:  "Ln asd ?? asd '!2",
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "Invalid last name provided", true)
+}
+
+func TestRegisterNewUserWitEmptyFirstName(t *testing.T) {
+
+	body := models.LoginRequest{
+		Email:     "newuser+" + t.Name() + "@example.com",
+		Password:  "testpass",
+		Handle:    "hn",
+		FirstName: " ",
+		LastName:  "test",
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "No first name provided", true)
+}
+
+func TestRegisterNewUserWithEmptyLastName(t *testing.T) {
+	body := models.LoginRequest{
+		Email:     "newuser+" + t.Name() + "@example.com",
+		Password:  "testpass",
+		Handle:    "hn",
+		FirstName: "george",
+		LastName:  "  ",
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "No last name provided", true)
+}
+
+// check for handle uniqueness
+func TestRegisterNewUsersWithWithDuplicateHandle(t *testing.T) {
+	body := models.LoginRequest{
+		Email:     "newuser1+" + t.Name() + "@example.com",
+		Password:  "testpass",
+		Handle:    "newuser",
+		FirstName: "george",
+		LastName:  "jenkins",
+	}
+	w1 := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w1.Code, http.StatusOK)
+
+	body = models.LoginRequest{
+		Email:     "newuser2+" + t.Name() + "@example.com",
+		Password:  "testpass",
+		Handle:    "newuser",
+		FirstName: "jim",
+		LastName:  "jenkins",
+	}
+	w2 := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w2.Code, http.StatusInternalServerError)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w2.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Error == "Couldn't register user, the handle is used", true)
+}
+
+// register email uniqueness
+func TestRegisterNewUsersWithWithDuplicateEmail(t *testing.T) {
+	body := models.LoginRequest{
+		Email:     t.Name() + "@example.com",
+		Password:  "testpass",
+		Handle:    "newuser1",
+		FirstName: "george",
+		LastName:  "jenkins",
+	}
+	w1 := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w1.Code, http.StatusOK)
+
+	body = models.LoginRequest{
+		Email:     t.Name() + "@example.com",
+		Password:  "testpass",
+		Handle:    "newuser2",
+		FirstName: "jim",
+		LastName:  "jenkins",
+	}
+	w2 := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w2.Code, http.StatusInternalServerError)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w2.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Error == "Couldn't register user, the email is used", true)
+}
+
+// check for weird handle
+func TestRegisterNewUserWithStrangeHandle(t *testing.T) {
+	body := models.LoginRequest{
+		Email:     "newuser+" + t.Name() + "@example.com",
+		Password:  "testpass",
+		Handle:    "asd 89 ! =  88sd&@asd.com",
+		FirstName: "george",
+		LastName:  "glooney",
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "Invalid handle provided", true)
+}
+
+// check for empty handle!
+func TestRegisterNewUserWithEmptyHandle(t *testing.T) {
+	body := models.LoginRequest{
+		Email:     "newuser+" + t.Name() + "@example.com",
+		Password:  "testpass",
+		Handle:    " ",
+		FirstName: "george",
+		LastName:  "glooney",
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "No handle provided", true)
 }
 
 // login tests
 func TestUserLoginNoPayload(t *testing.T) {
 	w := UserLoginRaw("", "", t, TheTestServer.GetRouter())
-	assert.Equal(t, w.Code, http.StatusUnauthorized)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "No password provided", true)
 }
 
 func TestUserLoginNoPassword(t *testing.T) {
 	w := UserLoginRaw("gclkaze@gmail.com", "", t, TheTestServer.GetRouter())
-	assert.Equal(t, w.Code, http.StatusUnauthorized)
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "No password provided", true)
 }
 
 func TestLoginIncorrectPassword(t *testing.T) {
@@ -122,27 +304,106 @@ func TestUnknownUserAttemptsToRefreshToken(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusUnauthorized)
 }
 
-// The tests below were previously placeholders. Re-adding as skipped TODOs
-// because behavior (auto-ban thresholds, email format validation) isn't
-// enforced in the current codebase and requires a spec before implementing.
 func TestUserRegistrationEmailNotCorrectlyFormed(t *testing.T) {
-	t.Skip("TODO: implement once email validation rules are defined")
+
+	body := models.LoginRequest{
+		Email:     "new*!user+" + t.Name() + "@ex?amp.le.com.au",
+		Password:  "testpass",
+		Handle:    "hn",
+		FirstName: "Fn",
+		LastName:  "Ln",
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "Invalid email form", true)
 }
 
 func TestUserRegistrationNoPassword(t *testing.T) {
-	t.Skip("TODO: implement - define expected behavior for empty password registration")
+	body := models.LoginRequest{
+		Email:     "newuser" + t.Name() + "@example.com",
+		Password:  "   ",
+		Handle:    "hn",
+		FirstName: "Fn",
+		LastName:  "Ln",
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "No password provided", true)
 }
 
-func TestRegistedWithBannedUser(t *testing.T) {
+func TestUserRegistrationNoEmail(t *testing.T) {
+	body := models.LoginRequest{
+		Email:     "    ",
+		Password:  "thisisapass",
+		Handle:    "hn",
+		FirstName: "Fn",
+		LastName:  "Ln",
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "No email provided", true)
+}
+
+func TestUserLoginEmailNotCorrectlyFormed(t *testing.T) {
+	body := models.LoginRequest{
+		Email:    "new*!user+" + t.Name() + "@ex?amp.le.com.au",
+		Password: "testpass",
+	}
+	w := UserLoginRaw(body.Email, body.Password, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "Invalid email form", true)
+}
+
+func TestUserLoginEmptyEmail(t *testing.T) {
+	body := models.LoginRequest{
+		Email:    "   ",
+		Password: "testpass",
+	}
+	w := UserLoginRaw(body.Email, body.Password, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "No email provided", true)
+}
+
+func TestUserLoginEmptyPassword(t *testing.T) {
+	body := models.LoginRequest{
+		Email:    "user@example.com",
+		Password: " ",
+	}
+	w := UserLoginRaw(body.Email, body.Password, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusBadRequest)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(w.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Details == "No password provided", true)
+}
+
+func TestRegisterWithBannedUser(t *testing.T) {
 	t.Skip("TODO: implement - requires ban/unban flow to be defined for registration")
 }
 
 func TestUnbanUserThenRegister(t *testing.T) {
 	t.Skip("TODO: implement - re-enable when supervise unban API usage is desired in tests")
-}
-
-func TestUserLoginEmailNotCorrectlyFormed(t *testing.T) {
-	t.Skip("TODO: implement once email validation rules are defined")
 }
 
 func TestBanUserWithConsecutiveLogin(t *testing.T) {
