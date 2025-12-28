@@ -72,6 +72,20 @@ func GetRandomUintNumber(max uint) uint {
 	return rand.UintN(max) // 0 ≤ n < max
 }
 
+func GetRandomNumberInRange(min, max int) int {
+	if min > max {
+		return -1
+	}
+	return min + GetRandomNumber(max-min+1)
+}
+
+func GetRandomUintRange(min, max uint) uint {
+	if min > max {
+		return 0
+	}
+	return min + GetRandomUintNumber(max-min+1)
+}
+
 func IsValidName(name string) bool {
 	if len(name) < 1 || len(name) > 50 {
 		return false

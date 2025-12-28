@@ -38,7 +38,7 @@ func NewSuperviseHandler(service *services.UserService) *SuperviseHandler {
 }
 
 func (u *SuperviseHandler) BanUser(c *gin.Context) {
-	initiator := c.GetUint("userID")
+	initiator := c.GetUint("userId")
 	userID := c.Param("userId")
 	userIDUint, err := utils.StringToUint(userID)
 
@@ -47,6 +47,10 @@ func (u *SuperviseHandler) BanUser(c *gin.Context) {
 		return
 	}
 
+	if initiator == userIDUint {
+		c.JSON(http.StatusInternalServerError, utils.ErrWithSimpleMessage("Admin User cannot ban himself"))
+		return
+	}
 	err = u.service.BanUser(userIDUint)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.Err(err, fmt.Sprintf("Admin User with id %d couldn't ban user %d", initiator, userIDUint)))
@@ -56,7 +60,7 @@ func (u *SuperviseHandler) BanUser(c *gin.Context) {
 }
 
 func (u *SuperviseHandler) UnbanUser(c *gin.Context) {
-	initiator := c.GetUint("userID")
+	initiator := c.GetUint("userId")
 	userID := c.Param("userId")
 	userIDUint, err := utils.StringToUint(userID)
 

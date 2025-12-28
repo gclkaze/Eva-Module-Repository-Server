@@ -60,6 +60,58 @@ func UserLogsIn(u *models.UserAccount, pass string, t *testing.T, r *gin.Engine)
 	return &resp
 }
 
+func UserBansUser(access *models.LoginResponse, userID uint, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+	fields := make(map[string]string)
+	fields["userId"] = utils.UintToString(userID)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add form fields
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			assert.Equal(t, false, true)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		assert.Equal(t, false, true)
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s/%d", routes.APIGroup, routes.SuperviseGroup, routes.SuperviseBanUserEndpoint, userID), body)
+	req.Header.Set("Authorization", "Bearer "+(*access).AccessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
+func UserUnBansUser(access *models.LoginResponse, userID uint, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
+	fields := make(map[string]string)
+	fields["userId"] = utils.UintToString(userID)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add form fields
+	for key, value := range fields {
+		if err := writer.WriteField(key, value); err != nil {
+			assert.Equal(t, false, true)
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		assert.Equal(t, false, true)
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, fmt.Sprintf("%s%s%s/%d", routes.APIGroup, routes.SuperviseGroup, routes.SuperviseUnbanUserEndpoint, userID), body)
+	req.Header.Set("Authorization", "Bearer "+(*access).AccessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
+
 // UserRegister sends a registration request to the test router and returns the recorder
 func UserRegister(body *models.LoginRequest, t *testing.T, r *gin.Engine) *httptest.ResponseRecorder {
 	var buf *bytes.Buffer

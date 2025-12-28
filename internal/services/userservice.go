@@ -51,6 +51,10 @@ func NewUserService(repo repositories.DeveloperRepository, accountRepo repositor
 	return mod
 }
 
+func (s UserService) GetDeveloperRepository() repositories.DeveloperRepository {
+	return s.repo
+}
+
 func (s UserService) GetDevelopersUserAccount(d *models.Developer) (*models.UserAccount, error) {
 	r, err := s.repo.FindByUserAccountID(d.UserID)
 	if err != nil {
@@ -257,6 +261,10 @@ func (s *UserService) initializeDefaultUsers() error {
 	return nil
 }
 
+func (s UserService) FindByEmail(email string) (*models.UserAccount, error) {
+	return s.accountRepo.FindByEmail(email)
+}
+
 func (s *UserService) InitializeUserRolePermissions() error {
 	for _, t := range models.GetUserRoleTypes() {
 		//var res models.UserRole
@@ -282,10 +290,24 @@ func (s *UserService) InitializeUserRolePermissions() error {
 }
 
 func (s *UserService) BanUser(userID uint) error {
+	dev, err := s.accountRepo.FindByID(userID)
+	if err != nil {
+		return err
+	}
+	if dev == nil {
+		return fmt.Errorf("unknown user with id %d", userID)
+	}
 	return s.accountRepo.BanUser(userID)
 }
 
 func (s *UserService) UnbanUser(userID uint) error {
+	dev, err := s.accountRepo.FindByID(userID)
+	if err != nil {
+		return err
+	}
+	if dev == nil {
+		return fmt.Errorf("unknown user with id %d", userID)
+	}
 	return s.accountRepo.UnbanUser(userID)
 }
 

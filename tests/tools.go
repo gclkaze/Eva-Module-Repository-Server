@@ -115,6 +115,13 @@ func AdminLogin(t *testing.T) *models.RequestResult[models.LoginResponse] {
 	return UserLogsIn(u, pass, t, TheTestServer.GetRouter())
 }
 
+func AdminBansUser(admin *models.LoginResponse, toBeBannedUser uint, t *testing.T) *httptest.ResponseRecorder {
+	return UserBansUser(admin, toBeBannedUser, t, TheTestServer.GetRouter())
+}
+
+func AdminUnBansUser(admin *models.LoginResponse, toBeBannedUser uint, t *testing.T) *httptest.ResponseRecorder {
+	return UserUnBansUser(admin, toBeBannedUser, t, TheTestServer.GetRouter())
+}
 func UserLogin(t *testing.T) *models.RequestResult[models.LoginResponse] {
 	u, err := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.User.String())
 	assert.Equal(t, err == nil, true)

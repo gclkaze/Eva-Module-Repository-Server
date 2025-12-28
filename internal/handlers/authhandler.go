@@ -99,12 +99,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	var user *models.UserAccount
 	user, err := h.service.Authenticate(email, pwd)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid credentials"))
 		return
 	}
 
 	if user != nil && user.IsBanned {
-		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid credentials"))
 		return
 	}
 
@@ -164,11 +164,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	user, err := h.service.Authenticate(email, pwd)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid credentials"))
 		return
 	}
 	if user != nil && user.IsBanned {
-		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid credentials"))
 		return
 	}
 
@@ -202,12 +202,12 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 		return
 	}
 	if user != nil && user.IsBanned {
-		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid credentials"))
 		return
 	}
 
 	if user == nil {
-		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid crendentials"))
+		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid credentials"))
 		return
 	}
 	access, refresh, err := h.service.GenerateTokens(user)

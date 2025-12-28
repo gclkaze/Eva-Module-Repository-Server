@@ -22,10 +22,13 @@ package tests
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/magiconair/properties/assert"
 )
@@ -399,21 +402,299 @@ func TestUserLoginEmptyPassword(t *testing.T) {
 }
 
 func TestRegisterWithBannedUser(t *testing.T) {
-	t.Skip("TODO: implement - requires ban/unban flow to be defined for registration")
+	//login as admin
+	adminLogin := AdminLogin(t)
+
+	email := t.Name() + "@example.com"
+	pwd := "thisisapass"
+	//register a new user
+	body := models.LoginRequest{
+		Email:     email,
+		Password:  pwd,
+		Handle:    strings.ToLower(t.Name()),
+		FirstName: t.Name(),
+		LastName:  t.Name(),
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusOK)
+
+	u, err := TheTestServer.GetBackend().GetUserService().FindByEmail(email)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, u != nil, true)
+
+	//admin bans user
+	wBan := AdminBansUser(&adminLogin.Value, u.ID, t)
+	var banResult models.RequestResult[models.EmptyRequestResult]
+	if err := json.Unmarshal(wBan.Body.Bytes(), &banResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, banResult.Message == "User was banned successfully", true)
+
+	//user registers again -> Invalid credentials
+	wFail := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, wFail.Code, http.StatusUnauthorized)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(wFail.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Error == "Invalid credentials", true)
 }
 
 func TestUnbanUserThenRegister(t *testing.T) {
-	t.Skip("TODO: implement - re-enable when supervise unban API usage is desired in tests")
+	//login as admin
+	adminLogin := AdminLogin(t)
+
+	email := t.Name() + "@example.com"
+	pwd := "thisisapass"
+	//register a new user
+	body := models.LoginRequest{
+		Email:     email,
+		Password:  pwd,
+		Handle:    strings.ToLower(t.Name()),
+		FirstName: t.Name(),
+		LastName:  t.Name(),
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusOK)
+
+	u, err := TheTestServer.GetBackend().GetUserService().FindByEmail(email)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, u != nil, true)
+
+	//admin bans user
+	wBan := AdminBansUser(&adminLogin.Value, u.ID, t)
+	var banResult models.RequestResult[models.EmptyRequestResult]
+	if err := json.Unmarshal(wBan.Body.Bytes(), &banResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, banResult.Message == "User was banned successfully", true)
+
+	//user registers again -> Invalid credentials
+	wFail := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, wFail.Code, http.StatusUnauthorized)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(wFail.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Error == "Invalid credentials", true)
+
+	//admin unbans user
+	wUnBan := AdminUnBansUser(&adminLogin.Value, u.ID, t)
+	var unbanResult models.RequestResult[models.EmptyRequestResult]
+	if err := json.Unmarshal(wUnBan.Body.Bytes(), &unbanResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, unbanResult.Message == "User was unbanned successfully", true)
+
+	//user registers again -> "Couldn't register user, the email is used"
+	wSuccess := UserRegister(&body, t, TheTestServer.GetRouter())
+
+	assert.Equal(t, wSuccess.Code, http.StatusInternalServerError)
+	var errResult models.ErrorResult
+	if err := json.Unmarshal(wSuccess.Body.Bytes(), &errResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, errResult.Error == "Couldn't register user, the email is used", true)
 }
 
 func TestBanUserWithConsecutiveLogin(t *testing.T) {
-	t.Skip("TODO: implement - no automatic ban on consecutive failed logins currently")
+	//login as admin
+	adminLogin := AdminLogin(t)
+
+	email := t.Name() + "@example.com"
+	pwd := "thisisapass"
+	name := t.Name()
+	//register a new user
+	body := models.LoginRequest{
+		Email:     email,
+		Password:  pwd,
+		Handle:    strings.ToLower(name)[:len(name)/2],
+		FirstName: name,
+		LastName:  name,
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusOK)
+
+	u, err := TheTestServer.GetBackend().GetUserService().FindByEmail(email)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, u != nil, true)
+
+	//admin bans user
+	wBan := AdminBansUser(&adminLogin.Value, u.ID, t)
+	var banResult models.RequestResult[models.EmptyRequestResult]
+	if err := json.Unmarshal(wBan.Body.Bytes(), &banResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, banResult.Message == "User was banned successfully", true)
+
+	//user logs in again -> Invalid credentials
+	wFail := UserLoginRaw(email, pwd, t, TheTestServer.GetRouter())
+	assert.Equal(t, wFail.Code, http.StatusUnauthorized)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(wFail.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Error == "Invalid credentials", true)
 }
 
 func TestUnbanUserWithLogin(t *testing.T) {
-	t.Skip("TODO: implement - requires supervise unban behavior to be tested via admin endpoints")
+	//login as admin
+	adminLogin := AdminLogin(t)
+
+	email := t.Name() + "@example.com"
+	pwd := "thisisapass"
+	//register a new user
+	body := models.LoginRequest{
+		Email:     email,
+		Password:  pwd,
+		Handle:    strings.ToLower(t.Name()),
+		FirstName: t.Name(),
+		LastName:  t.Name(),
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusOK)
+
+	u, err := TheTestServer.GetBackend().GetUserService().FindByEmail(email)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, u != nil, true)
+
+	//admin bans user
+	wBan := AdminBansUser(&adminLogin.Value, u.ID, t)
+	var banResult models.RequestResult[models.EmptyRequestResult]
+	if err := json.Unmarshal(wBan.Body.Bytes(), &banResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, banResult.Message == "User was banned successfully", true)
+
+	//user registers again -> Invalid credentials
+	wFail := UserLoginRaw(email, pwd, t, TheTestServer.GetRouter())
+	assert.Equal(t, wFail.Code, http.StatusUnauthorized)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(wFail.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Error == "Invalid credentials", true)
+
+	//admin unbans user
+	wUnBan := AdminUnBansUser(&adminLogin.Value, u.ID, t)
+	var unbanResult models.RequestResult[models.EmptyRequestResult]
+	if err := json.Unmarshal(wUnBan.Body.Bytes(), &unbanResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, unbanResult.Message == "User was unbanned successfully", true)
+
+	wSuccess := UserLoginRaw(email, pwd, t, TheTestServer.GetRouter())
+	//user logs in again -> Status OK
+	assert.Equal(t, wSuccess.Code, http.StatusOK)
+	var rrOK models.RequestResult[models.LoginResponse]
+	if err := json.Unmarshal(wSuccess.Body.Bytes(), &rrOK); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, (rrOK.Value.AccessToken != "" && rrOK.Value.RefreshToken != ""), true)
 }
 
 func TestUserRefreshBannedUser(t *testing.T) {
-	t.Skip("TODO: implement - requires banned-user behavior to be specified for refresh tokens")
+	//login as admin
+	adminLogin := AdminLogin(t)
+
+	email := t.Name() + "@example.com"
+	pwd := "thisisapass"
+	//register a new user
+	body := models.LoginRequest{
+		Email:     email,
+		Password:  pwd,
+		Handle:    strings.ToLower(t.Name()),
+		FirstName: t.Name(),
+		LastName:  t.Name(),
+	}
+	w := UserRegister(&body, t, TheTestServer.GetRouter())
+	assert.Equal(t, w.Code, http.StatusOK)
+	var initialTokens models.RequestResult[models.LoginResponse]
+	if err := json.Unmarshal(w.Body.Bytes(), &initialTokens); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+
+	u, err := TheTestServer.GetBackend().GetUserService().FindByEmail(email)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, u != nil, true)
+
+	//admin bans user
+	wBan := AdminBansUser(&adminLogin.Value, u.ID, t)
+	var banResult models.RequestResult[models.EmptyRequestResult]
+	if err := json.Unmarshal(wBan.Body.Bytes(), &banResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, banResult.Message == "User was banned successfully", true)
+
+	//user refreshes -> Invalid credentials
+	wFail := UserRefresh(initialTokens.Value.RefreshToken, t, TheTestServer.GetRouter())
+	assert.Equal(t, wFail.Code, http.StatusUnauthorized)
+	var rr models.ErrorResult
+	if err := json.Unmarshal(wFail.Body.Bytes(), &rr); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, rr.Error == "Invalid credentials", true)
+
+	//admin unbans user
+	wUnBan := AdminUnBansUser(&adminLogin.Value, u.ID, t)
+	var unbanResult models.RequestResult[models.EmptyRequestResult]
+	if err := json.Unmarshal(wUnBan.Body.Bytes(), &unbanResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, unbanResult.Message == "User was unbanned successfully", true)
+
+	//user refreshes again in an attempt to get tokens -> OK!
+	wSuccess := UserRefresh(initialTokens.Value.RefreshToken, t, TheTestServer.GetRouter())
+
+	assert.Equal(t, wSuccess.Code, http.StatusOK)
+	var rrOK models.RequestResult[models.LoginResponse]
+	if err := json.Unmarshal(wSuccess.Body.Bytes(), &rrOK); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, (rrOK.Value.AccessToken != "" && rrOK.Value.RefreshToken != ""), true)
+}
+
+// admin bans user that does not exist
+func TestAdminBansUserThatDoesNotExist(t *testing.T) {
+	//login as admin
+	adminLogin := AdminLogin(t)
+	u, _ := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.Admin.String())
+	//admin bans user
+	unknownUserID := utils.GetRandomUintRange(100, 10000)
+	wBan := AdminBansUser(&adminLogin.Value, unknownUserID, t)
+	var banResult models.ErrorResult
+	if err := json.Unmarshal(wBan.Body.Bytes(), &banResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, banResult.Details == fmt.Sprintf("unknown user with id %d", unknownUserID), true)
+	assert.Equal(t, banResult.Error == fmt.Sprintf("Admin User with id %d couldn't ban user %d", u.ID, unknownUserID), true)
+}
+
+// admin unbans user that does not exist
+func TestAdminUnBansUserThatDoesNotExist(t *testing.T) {
+	//login as admin
+	adminLogin := AdminLogin(t)
+	u, _ := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.Admin.String())
+	//admin bans user
+	unknownUserID := utils.GetRandomUintRange(100, 10000)
+	wBan := AdminUnBansUser(&adminLogin.Value, unknownUserID, t)
+	var unbanResult models.ErrorResult
+	if err := json.Unmarshal(wBan.Body.Bytes(), &unbanResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, unbanResult.Details == fmt.Sprintf("unknown user with id %d", unknownUserID), true)
+	assert.Equal(t, unbanResult.Error == fmt.Sprintf("Admin User with id %d couldn't unban user %d", u.ID, unknownUserID), true)
+}
+
+func TestAdminBansHimself(t *testing.T) {
+	//login as admin
+	adminLogin := AdminLogin(t)
+	u, _ := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.Admin.String())
+	//admin attempts to ban himself
+	wBan := AdminBansUser(&adminLogin.Value, u.ID, t)
+	var banResult models.ErrorResult
+	if err := json.Unmarshal(wBan.Body.Bytes(), &banResult); err != nil {
+		t.Fatalf("invalid response JSON: %v", err)
+	}
+	assert.Equal(t, banResult.Error == "Admin User cannot ban himself", true)
 }
