@@ -36,6 +36,8 @@ type ModuleRepository interface {
 	Update(mod *models.Module) error
 	FindByID(id uint, preload bool) (*models.Module, error)
 	SearchByKeywords(tags []string) ([]models.Module, error)
+	SearchByComponents(nameTags []string, descrTags []string, tags []string) ([]models.Module, error)
+
 	Delete(id uint) (bool, error)
 	GetDB() *gorm.DB
 	GetMaxID() (uint, error)
@@ -134,6 +136,41 @@ func (r moduleRepository) SearchByKeywords(tags []string) ([]models.Module, erro
 	selection := "modules.id, modules.repr, modules.title, modules.description "
 	var taggedResults []models.Module
 
+	if results != nil {
+		if len(results) != 0 {
+			var ids []uint
+			for i := 0; i < len(results); i++ {
+				ids = append(ids, results[i].ID)
+			}
+			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND modules.id NOT IN ? ", selection, whereKeywordsClause)
+			r.db.Raw(q, ids).Scan(&taggedResults)
+
+		} else {
+			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s )", selection, whereKeywordsClause)
+			r.db.Raw(q).Scan(&taggedResults)
+		}
+	}
+
+	results = append(results, taggedResults...)
+	return results, nil
+}
+
+func (r moduleRepository) SearchByComponents(nameTags []string, descrTags []string, tags []string) ([]models.Module, error) {
+	var results []models.Module
+
+	whereTitleClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("title", nameTags)
+	whereReprClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("repr", tags)
+	whereDescriptionClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("description", descrTags)
+
+	r.db.
+		Where(whereTitleClause + " OR " + whereReprClause + " OR " + whereDescriptionClause).
+		Find(&results)
+
+	whereKeywordsClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("keywords.label", tags)
+	selection := "modules.id, modules.repr, modules.title, modules.description "
+	var taggedResults []models.Module
+
+	//need also to be accepted!
 	if results != nil {
 		if len(results) != 0 {
 			var ids []uint

@@ -182,3 +182,20 @@ func (h *ModuleHandler) SearchModulesByTags(c *gin.Context) {
 
 	c.JSON(http.StatusOK, utils.OkWithMessage(modules, "Module search was complete"))
 }
+
+func (h *ModuleHandler) SearchModulesByComponents(c *gin.Context) {
+	tagTokens := c.QueryArray("tags")
+
+	//tagTokens := strings.Split(tagsQuery, ",")
+
+	nameTokens := c.QueryArray("name")
+	descrTokens := c.QueryArray("description")
+
+	modules, err := h.service.SearchByComponents(nameTokens, descrTokens, tagTokens)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't find the modules"))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.OkWithMessage(modules, "Module search was complete"))
+}

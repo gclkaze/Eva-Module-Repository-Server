@@ -578,3 +578,35 @@ func (s *ModuleService) CreateAndGetKeywordsTx(tx *gorm.DB, tags []string) ([]mo
 	}
 	return keywords, nil
 }
+
+func (s ModuleService) SearchByComponents(nameTokens []string, descrTokens []string, tags []string) ([]dto.ModuleDTO, error) {
+	if len(nameTokens) == 0 && len(descrTokens) == 0 && len(tags) == 0 {
+		return nil, fmt.Errorf("no search criteria provided")
+	}
+
+	results, err := s.repo.SearchByComponents(nameTokens, descrTokens, tags)
+	if err != nil {
+		return nil, err
+	}
+
+	var dtos []dto.ModuleDTO
+	for i := range results {
+		dtos = append(dtos, *dto.NewModuleDTO(results[i]))
+	}
+	return dtos, err
+}
+
+/*
+func (s ModuleService) getColumnTokenConditionString(columnName string, tokens []string) (string, []any) {
+	if len(tokens) == 0 {
+		return "", nil
+	}
+	var conditions []string
+	var args []any
+
+	for _, t := range tokens {
+		conditions = append(conditions, columnName+" LIKE ?")
+		args = append(args, "%"+t+"%")
+	}
+	return strings.Join(conditions, " OR "), args
+}*/
