@@ -221,7 +221,7 @@ func (r moduleRepository) SearchByComponents(nameTags []string, descrTags []stri
 	}
 
 	err = r.db.
-		Where(whereQuery).
+		Where(whereQuery).Preload("Keywords").
 		Find(&results).Error
 
 	if err != nil {
@@ -239,11 +239,11 @@ func (r moduleRepository) SearchByComponents(nameTags []string, descrTags []stri
 				ids = append(ids, results[i].ID)
 			}
 			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND modules.id NOT IN ? AND %s", selection, whereKeywordsClause, acceptedReleaseConditionQueryPart)
-			r.db.Raw(q, ids).Scan(&taggedResults)
+			r.db.Preload("Keywords").Raw(q, ids).Scan(&taggedResults)
 
 		} else {
 			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND %s ", selection, whereKeywordsClause, acceptedReleaseConditionQueryPart)
-			r.db.Raw(q).Scan(&taggedResults)
+			r.db.Preload("Keywords").Raw(q).Scan(&taggedResults)
 		}
 	}
 
