@@ -24,6 +24,7 @@ package repositories
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
@@ -41,14 +42,17 @@ type ModuleRepository interface {
 	Delete(id uint) (bool, error)
 	GetDB() *gorm.DB
 	GetMaxID() (uint, error)
+	ReprExists(repr string) (bool, error)
+	ReprExistsExcept(id uint, repr string) (bool, error)
 }
 
 type moduleRepository struct {
-	db *gorm.DB
+	db         *gorm.DB
+	statusRepo ReleaseStatusRepository
 }
 
-func NewModuleRepository(db *gorm.DB) ModuleRepository {
-	return &moduleRepository{db: db}
+func NewModuleRepository(db *gorm.DB, releaseStatusRepo ReleaseStatusRepository) ModuleRepository {
+	return &moduleRepository{db: db, statusRepo: releaseStatusRepo}
 }
 
 func (r *moduleRepository) GetDB() *gorm.DB {
@@ -108,6 +112,32 @@ func (r moduleRepository) GetMaxID() (uint, error) {
 	return maxID, err
 }
 
+func (r moduleRepository) ReprExists(repr string) (bool, error) {
+	var m models.Module
+	err := r.db.Where("repr = ?", repr).First(&m).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r moduleRepository) ReprExistsExcept(id uint, repr string) (bool, error) {
+	var m models.Module
+	err := r.db.Where("repr = ? AND id != ?", repr, id).First(&m).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (r *moduleRepository) Update(mod *models.Module) error {
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Save(mod).Error; err != nil {
@@ -162,26 +192,57 @@ func (r moduleRepository) SearchByComponents(nameTags []string, descrTags []stri
 	whereReprClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("repr", tags)
 	whereDescriptionClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("description", descrTags)
 
-	r.db.
-		Where(whereTitleClause + " OR " + whereReprClause + " OR " + whereDescriptionClause).
-		Find(&results)
+	accepted, err := r.statusRepo.GetStatus(Accepted)
+	if err != nil {
+		return nil, err
+	}
 
+	if accepted == nil {
+		return nil, fmt.Errorf("couldn't find accepted release status in the storage")
+	}
+	acceptedReleaseConditionQueryPart := fmt.Sprintf("(SELECT COUNT(*) FROM module_releases WHERE module_releases.module_id = modules.id AND module_releases.status_id = %d) > 0", accepted.ID)
+
+	var queries []string
+	if whereTitleClause != "" {
+		queries = append(queries, whereTitleClause)
+	}
+	if whereReprClause != "" {
+		queries = append(queries, whereReprClause)
+	}
+	if whereDescriptionClause != "" {
+		queries = append(queries, whereDescriptionClause)
+	}
+
+	whereQuery := strings.Join(queries, "OR ")
+	if whereQuery != "" {
+		whereQuery = fmt.Sprintf("( %s ) AND %s", whereQuery, acceptedReleaseConditionQueryPart)
+	} else {
+		whereQuery = acceptedReleaseConditionQueryPart
+	}
+
+	err = r.db.
+		Where(whereQuery).
+		Find(&results).Error
+
+	if err != nil {
+		return results, err
+	}
 	whereKeywordsClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("keywords.label", tags)
 	selection := "modules.id, modules.repr, modules.title, modules.description "
 	var taggedResults []models.Module
 
-	//need also to be accepted!
-	if results != nil {
+	//need also to be accepted & to have releases, at least one accepted release
+	if results != nil && whereKeywordsClause != "" {
 		if len(results) != 0 {
 			var ids []uint
 			for i := 0; i < len(results); i++ {
 				ids = append(ids, results[i].ID)
 			}
-			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND modules.id NOT IN ? ", selection, whereKeywordsClause)
+			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND modules.id NOT IN ? AND %s", selection, whereKeywordsClause, acceptedReleaseConditionQueryPart)
 			r.db.Raw(q, ids).Scan(&taggedResults)
 
 		} else {
-			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s )", selection, whereKeywordsClause)
+			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND %s ", selection, whereKeywordsClause, acceptedReleaseConditionQueryPart)
 			r.db.Raw(q).Scan(&taggedResults)
 		}
 	}

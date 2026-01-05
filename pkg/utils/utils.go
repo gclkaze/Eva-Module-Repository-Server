@@ -34,6 +34,10 @@ var nameRegex = regexp.MustCompile(`^[\p{L}]+([\p{L}\s'-]*[\p{L}]+)?$`)
 var handleRegex = regexp.MustCompile(
 	`^[a-zA-Z][a-zA-Z0-9]*(?:[._-][a-zA-Z0-9]+)*$`,
 )
+var reprRegex = regexp.MustCompile(`^[A-Za-z0-9]+( [A-Za-z0-9]+)*$`)
+
+var ModuleReprMin = 3
+var ModuleReprMax = 50
 
 func StringToUint(str string) (uint, error) {
 	// Convert string to uint64 first
@@ -98,4 +102,12 @@ func IsValidHandle(handle string) bool {
 		return false
 	}
 	return handleRegex.MatchString(handle)
+}
+
+func IsValidModuleName(moduleName string) bool {
+	if len(moduleName) < ModuleReprMin || len(moduleName) > ModuleReprMax {
+		return false
+	}
+	return reprRegex.MatchString(moduleName)
+
 }

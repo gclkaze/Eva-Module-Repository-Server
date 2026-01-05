@@ -27,7 +27,7 @@ import (
 type Module struct {
 	gorm.Model
 	Title       string      `json:"title"`
-	Repr        string      `json:"repr"`
+	Repr        string      `gorm:"type:varchar(50);uniqueIndex:idx_module_repr" json:"repr"`
 	Description string      `json:"description"`
 	OwnerID     uint        `json:"owner_id"`
 	Owner       ModuleOwner `gorm:"foreignKey:OwnerID"`

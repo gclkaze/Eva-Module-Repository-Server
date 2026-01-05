@@ -173,6 +173,21 @@ func (s *ModuleService) CreateModule(userID uint, title string, descr string, re
 	if err != nil {
 		return 0, err
 	}
+
+	repr = strings.TrimSpace(repr)
+	if !utils.IsValidModuleName(repr) {
+		err = fmt.Errorf("the module handle %s should not contain strange characters and its length should be between 3 and 20 characters long", repr)
+		return 0, err
+	}
+	reprExists, err := s.ReprExists(repr)
+	if err != nil {
+		return 0, err
+	}
+
+	if reprExists {
+		err = fmt.Errorf("the module handle %s is already taken..use a different one", repr)
+		return 0, err
+	}
 	mod := models.NewModule(title, repr, descr, owner.ID, *owner, keywords)
 	err = s.repo.Create(mod)
 	if err != nil {
@@ -199,6 +214,14 @@ func (s ModuleService) GetTheModulePath(mod *models.Module) {
 
 }
 
+func (s ModuleService) ReprExists(repr string) (bool, error) {
+	return s.repo.ReprExists(repr)
+}
+
+func (s ModuleService) ReprExistsExcept(id uint, repr string) (bool, error) {
+	return s.repo.ReprExistsExcept(id, repr)
+}
+
 func (s *ModuleService) CreateModuleTx(
 	userID uint,
 	title string,
@@ -220,6 +243,20 @@ func (s *ModuleService) CreateModuleTx(
 	title = strings.TrimSpace(title)
 	if title == "" {
 		return 0, fmt.Errorf("the module title cannot be empty")
+	}
+
+	repr = strings.TrimSpace(repr)
+
+	if !utils.IsValidModuleName(repr) {
+		err := fmt.Errorf("the module handle %s should not contain strange characters and its length should be between 3 and 50 characters long", repr)
+		return 0, err
+	}
+	reprExists, errFileExists := s.ReprExists(repr)
+	if errFileExists != nil {
+		return 0, errFileExists
+	}
+	if reprExists {
+		return 0, fmt.Errorf("the module handle %s is already taken..use a different one", repr)
 	}
 
 	var (
@@ -303,6 +340,19 @@ func (s *ModuleService) CreateModuleTx(
 func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, descr string, repr string, file *multipart.FileHeader, tags string, c *gin.Context) (uint, error) {
 	mod, err := s.GetModule(modID)
 	if err != nil {
+		return 0, err
+	}
+
+	repr = strings.TrimSpace(repr)
+	if !utils.IsValidModuleName(repr) {
+		return 0, fmt.Errorf("the module handle %s should not contain strange characters and its length should be between 3 and 20 characters long", repr)
+	}
+	reprExists, errReprExists := s.ReprExistsExcept(modID, repr)
+	if errReprExists != nil {
+		return 0, errReprExists
+	}
+	if reprExists {
+		err = fmt.Errorf("the module handle %s is already taken..use a different one", repr)
 		return 0, err
 	}
 

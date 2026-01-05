@@ -47,7 +47,7 @@ func Teardown() {
 
 func GetModuleInfo(theFile string, t *testing.T) (string, string, string, string, string) {
 	title := "My Super Module To Be Suggested- " + t.Name()
-	repr := "my-super-module-to-be-suggested-" + t.Name()
+	repr := "Module " + t.Name()
 	tags := "super,module,tagged,suggested"
 	description := "This is a description of the Suggested Module!" + t.Name()
 	filePath := path.Join(TestResourcesFolder, theFile)
@@ -57,7 +57,7 @@ func GetModuleInfo(theFile string, t *testing.T) (string, string, string, string
 
 func GetModuleInfoMultipleFiles(theFiles []string, t *testing.T) (string, string, string, string, []string) {
 	title := "My Super Module To Be Suggested- " + t.Name()
-	repr := "my-super-module-to-be-suggested-" + t.Name()
+	repr := "Module " + t.Name()
 	tags := "super,module,tagged,suggested"
 	description := "This is a description of the Suggested Module!" + t.Name()
 
@@ -72,7 +72,7 @@ func GetModuleInfoMultipleFiles(theFiles []string, t *testing.T) (string, string
 
 func GetNamedModuleInfo(name string, theFile string, t *testing.T) (string, string, string, string, string) {
 	title := name + " My Super Module To Be Suggested- " + t.Name()
-	repr := name + "-my-super-module-to-be-suggested-" + t.Name()
+	repr := name + " " + t.Name()
 	tags := "super,module,tagged,suggested"
 	description := name + " This is a description of the Suggested Module!" + t.Name()
 	filePath := path.Join(TestResourcesFolder, theFile)
@@ -129,6 +129,27 @@ func UserLogin(t *testing.T) *models.RequestResult[models.LoginResponse] {
 	return UserLogsIn(u, pass, t, TheTestServer.GetRouter())
 }
 
+func testModuleCreationRet(mr *testmodels.ModuleRequest, t *testing.T) *httptest.ResponseRecorder {
+	t.Helper()
+	pass := GetDefaultUserPassword()
+	u, err := TheTestServer.GetBackend().GetUserService().GetFirstWithRole(models.User.String())
+	assert.Equal(t, err == nil, true)
+	resp := UserLogsIn(u, pass, t, TheTestServer.GetRouter())
+	_, err = TheTestServer.GetBackend().GetModuleService().GetMaxID()
+	assert.Equal(t, err == nil, true)
+
+	//upload a module,
+	title := mr.Title
+	repr := mr.Repr
+	tags := mr.Tags
+	description := mr.Description
+	//theFile := mr.TheFile
+	filePath := mr.FilePath
+
+	rec := ModuleCreate(title, repr, tags, description, filePath, resp, t, TheTestServer.GetRouter())
+	return rec
+}
+
 func testModuleCreation(mr *testmodels.ModuleRequest, t *testing.T) (uint, *models.LoginResponse) {
 	t.Helper()
 	pass := GetDefaultUserPassword()
@@ -145,6 +166,10 @@ func testModuleCreation(mr *testmodels.ModuleRequest, t *testing.T) (uint, *mode
 	description := mr.Description
 	theFile := mr.TheFile
 	filePath := mr.FilePath
+
+	if len(repr) > utils.ModuleReprMax {
+		repr = repr[len(repr)-utils.ModuleReprMax:]
+	}
 
 	rec := ModuleCreate(title, repr, tags, description, filePath, resp, t, TheTestServer.GetRouter())
 	//check response

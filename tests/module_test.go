@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
@@ -51,6 +52,52 @@ func TestModuleCreation(t *testing.T) {
 	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
 
 	testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+}
+
+func TestModuleCreationDuplicateRepr(t *testing.T) {
+	theFile := "assignvalue.eva"
+	title, repr, tags, description, filePath := GetModuleInfo(theFile, t)
+
+	testModuleCreation(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+
+	rec := testModuleCreationRet(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+	assert.Equal(t, rec.Code, http.StatusInternalServerError)
+
+	var respModCreation models.ErrorResult
+	err := json.Unmarshal(rec.Body.Bytes(), &respModCreation)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, respModCreation.Error, "Couldn't upload module")
+	assert.Equal(t, respModCreation.Details, fmt.Sprintf("the module handle %s is already taken..use a different one", repr))
+}
+
+func TestModuleCreationSmallRepr(t *testing.T) {
+	theFile := "assignvalue.eva"
+	title, _, tags, description, filePath := GetModuleInfo(theFile, t)
+
+	repr := "ab"
+	rec := testModuleCreationRet(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+	assert.Equal(t, rec.Code, http.StatusInternalServerError)
+
+	var respModCreation models.ErrorResult
+	err := json.Unmarshal(rec.Body.Bytes(), &respModCreation)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, respModCreation.Error, "Couldn't upload module")
+	assert.Equal(t, respModCreation.Details, fmt.Sprintf("the module handle %s should not contain strange characters and its length should be between 3 and 50 characters long", repr))
+}
+
+func TestModuleCreationBigRepr(t *testing.T) {
+	theFile := "assignvalue.eva"
+	title, _, tags, description, filePath := GetModuleInfo(theFile, t)
+
+	repr := strings.Repeat("A", 51)
+	rec := testModuleCreationRet(&testmodels.ModuleRequest{Title: title, Repr: repr, Tags: tags, Description: description, TheFile: theFile, FilePath: filePath}, t)
+	assert.Equal(t, rec.Code, http.StatusInternalServerError)
+
+	var respModCreation models.ErrorResult
+	err := json.Unmarshal(rec.Body.Bytes(), &respModCreation)
+	assert.Equal(t, err == nil, true)
+	assert.Equal(t, respModCreation.Error, "Couldn't upload module")
+	assert.Equal(t, respModCreation.Details, fmt.Sprintf("the module handle %s should not contain strange characters and its length should be between 3 and 50 characters long", repr))
 }
 
 func TestModuleSuggestion(t *testing.T) {

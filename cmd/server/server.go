@@ -106,7 +106,7 @@ func (inst EvaModuleRepositoryServer) GetDeveloperFolder(devID uint) string {
 }
 
 func (inst EvaModuleRepositoryServer) GetReleaseBasePathWithName(name string) string {
-	return inst.be.GetModuleService().GetReleaseBasePathWithName(name)
+	return inst.be.GetModuleService().GetReleaseBasePathWithName(utils.GetRepoName(name))
 }
 
 func (inst *EvaModuleRepositoryServer) SetUploadFileLimit(limit int64) int64 {
@@ -117,7 +117,7 @@ func (inst *EvaModuleRepositoryServer) SetUploadFileLimit(limit int64) int64 {
 }
 
 func (inst EvaModuleRepositoryServer) GetReleaseBasePathWithNameAndVersion(name string, version string) string {
-	return inst.be.GetModuleService().GetReleaseBasePathWithNameAndVersion(name, version)
+	return inst.be.GetModuleService().GetReleaseBasePathWithNameAndVersion(utils.GetRepoName(name), version)
 }
 func (inst *EvaModuleRepositoryServer) InitializeWithPropertiesPath(prop string) error {
 	config.InitWithPropertiesPath(prop)

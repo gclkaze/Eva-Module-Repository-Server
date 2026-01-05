@@ -438,7 +438,7 @@ func TestModuleSingleReleaseDeletion(t *testing.T) {
 }
 
 // module with multiple releases -> DELETE a single release that does not exist :)
-func TestModuleSingleReleaseDeletionWithUnknownVersion(t *testing.T) {
+func TestSingleReleaseDLTWithUnknownVersion(t *testing.T) {
 	versions := []string{
 		"1.0.0",
 		"2.0.0",
@@ -476,7 +476,6 @@ func TestModuleSingleReleaseDeletionWithUnknownVersion(t *testing.T) {
 
 		assert.Equal(t, utils.FolderExists(releasePath), true)
 		assert.Equal(t, utils.FileExists(path.Join(releasePath, distFile)), true)
-
 	}
 }
 

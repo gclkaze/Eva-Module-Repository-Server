@@ -167,9 +167,10 @@ func (db *EvaModuleRepositoryDatabase) initializeData() error {
 }
 
 func (db *EvaModuleRepositoryDatabase) initializeRepositories() error {
-	db.moduleRepo = repositories.NewModuleRepository(db.db)
 	db.releaseRepo = repositories.NewReleaseRepository(db.db)
 	db.releaseStatusRepo = repositories.NewReleaseStatusRepository(db.db)
+	db.moduleRepo = repositories.NewModuleRepository(db.db, db.releaseStatusRepo)
+
 	db.developerRepo = repositories.NewDeveloperRepository(db.db)
 	db.userAccountRepo = repositories.NewUserAccountRepository(db.db)
 	db.devAccountRepo = repositories.NewDeveloperRepository(db.db)
