@@ -29,6 +29,8 @@ type ModuleDTO struct {
 	Title       string   `json:"title" binding:"required"`
 	Repr        string   `json:"repr" binding:"required"`
 	Description string   `json:"description" binding:"required"`
+	Releases    int64    `json:"releases" binding:"required"`
+	RepoName    string   `json:"repoName" binding:"required"`
 	Tags        []string `json:"tags" binding:"required"`
 }
 
@@ -37,5 +39,13 @@ func NewModuleDTO(mod models.Module) *ModuleDTO {
 	for i := range mod.Keywords {
 		tags = append(tags, mod.Keywords[i].Label)
 	}
-	return &ModuleDTO{ID: mod.ID, Title: mod.Title, Repr: mod.Repr, Description: mod.Description, Tags: tags}
+	return &ModuleDTO{ID: mod.ID, Title: mod.Title, Repr: mod.Repr, Description: mod.Description, Tags: tags, RepoName: mod.RepoName}
+}
+
+func NewModuleDTOWithReleaseInformation(mod models.Module, releaseCNT int64) *ModuleDTO {
+	var tags []string
+	for i := range mod.Keywords {
+		tags = append(tags, mod.Keywords[i].Label)
+	}
+	return &ModuleDTO{ID: mod.ID, Title: mod.Title, Repr: mod.Repr, Description: mod.Description, Tags: tags, Releases: releaseCNT, RepoName: mod.RepoName}
 }

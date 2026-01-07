@@ -188,7 +188,7 @@ func (s *ModuleService) CreateModule(userID uint, title string, descr string, re
 		err = fmt.Errorf("the module handle %s is already taken..use a different one", repr)
 		return 0, err
 	}
-	mod := models.NewModule(title, repr, descr, owner.ID, *owner, keywords)
+	mod := models.NewModule(title, repr, descr, owner.ID, *owner, keywords, utils.GetRepoName(repr))
 	err = s.repo.Create(mod)
 	if err != nil {
 		return 0, err
@@ -293,7 +293,7 @@ func (s *ModuleService) CreateModuleTx(
 			return err
 		}
 
-		mod = models.NewModule(title, repr, descr, owner.ID, *owner, keywords)
+		mod = models.NewModule(title, repr, descr, owner.ID, *owner, keywords, utils.GetRepoName(repr))
 
 		if err := s.repo.CreateTx(tx, mod); err != nil {
 			return err
@@ -373,7 +373,7 @@ func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, 
 		return 0, err
 	}
 
-	mod.Update(title, repr, descr, keywords)
+	mod.Update(title, repr, descr, keywords, utils.GetRepoName(repr))
 	err = s.repo.Update(mod)
 
 	if err != nil {
@@ -462,6 +462,33 @@ func (s *ModuleService) FindByID(id uint) (*dto.ModuleDTO, error) {
 		return nil, nil
 	}
 	res := dto.NewModuleDTO(*result)
+	return res, error
+}
+
+func (s *ModuleService) GetModuleInfo(moduleName string) (*dto.ModuleEnrichedDTO, error) {
+	moduleName = strings.TrimSpace(moduleName)
+	if moduleName == "" {
+		return nil, fmt.Errorf("empty module name provided")
+	}
+
+	theModule, err := s.repo.FindByNameOrReprNameOrRepoName(moduleName)
+	if err != nil {
+		return nil, err
+	}
+	if theModule == nil {
+		return nil, fmt.Errorf("no module found with name %s", moduleName)
+	}
+
+	//the module should have at least one ACCEPTED release so thus it is available in the REPOSITORY List
+	id := theModule.ID
+	moduleReleases, error := s.releaseService.GetModuleAcceptedReleases(id)
+	if error != nil {
+		return nil, error
+	}
+	if len(moduleReleases) == 0 {
+		return nil, fmt.Errorf("the module with id %d has no accepted releases", id)
+	}
+	res := dto.NewModuleEnrichedDTO(theModule, moduleReleases)
 	return res, error
 }
 
@@ -641,7 +668,12 @@ func (s ModuleService) SearchByComponents(nameTokens []string, descrTokens []str
 
 	var dtos []dto.ModuleDTO
 	for i := range results {
-		dtos = append(dtos, *dto.NewModuleDTO(results[i]))
+		releaseCNT, countErr := s.releaseService.GetReleaseAcceptedCountForModule(results[i].ID)
+		if countErr != nil {
+			s.logger.Errorf("module service", "error while counting accepted releases for the modules %s", countErr.Error())
+			continue
+		}
+		dtos = append(dtos, *dto.NewModuleDTOWithReleaseInformation(results[i], releaseCNT))
 	}
 	return dtos, err
 }

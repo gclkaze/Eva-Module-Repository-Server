@@ -31,19 +31,21 @@ type Module struct {
 	Description string      `json:"description"`
 	OwnerID     uint        `json:"owner_id"`
 	Owner       ModuleOwner `gorm:"foreignKey:OwnerID"`
+	RepoName    string      `json:"repoName"`
 
 	//Releases []ModuleRelease `gorm:"foreignKey:ModuleID"`
 
 	Keywords []Keyword `gorm:"many2many:module_keywords;" json:"keywords,omitempty"`
 }
 
-func NewModule(title string, repr string, description string, ownerID uint, owner ModuleOwner, keywords []Keyword) *Module {
-	return &Module{Title: title, Repr: repr, Description: description, OwnerID: ownerID, Owner: owner, Keywords: keywords}
+func NewModule(title string, repr string, description string, ownerID uint, owner ModuleOwner, keywords []Keyword, repoName string) *Module {
+	return &Module{Title: title, Repr: repr, Description: description, OwnerID: ownerID, Owner: owner, Keywords: keywords, RepoName: repoName}
 }
 
-func (m *Module) Update(title string, repr string, description string, keywords []Keyword) {
+func (m *Module) Update(title string, repr string, description string, keywords []Keyword, repoName string) {
 	m.Title = title
 	m.Repr = repr
 	m.Description = description
 	m.Keywords = keywords
+	m.RepoName = repoName
 }

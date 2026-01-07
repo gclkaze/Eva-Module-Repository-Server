@@ -47,6 +47,7 @@ type ReleaseRepository interface {
 	GetCount() (int64, error)
 	FindByModuleIDAndVersionExceptOne(ID uint, modID uint, version string) (*models.ModuleRelease, error)
 	GetModuleReleaseByVersion(id uint, version string) (*models.ModuleRelease, error)
+	GetReleaseCountForModule(moduleID uint, statusID uint) (int64, error)
 }
 
 type releaseRepository struct {
@@ -74,6 +75,19 @@ func (r releaseRepository) GetCount() (int64, error) {
 	var count int64
 	err := r.db.
 		Model(&models.ModuleRelease{}).
+		Count(&count).Error
+
+	if err != nil {
+		return 0, err
+	}
+	return count, err
+}
+
+func (r releaseRepository) GetReleaseCountForModule(moduleID uint, statusID uint) (int64, error) {
+	var count int64
+	err := r.db.
+		Model(&models.ModuleRelease{}).
+		Where("module_id = ? AND status_id = ?", moduleID, statusID).
 		Count(&count).Error
 
 	if err != nil {

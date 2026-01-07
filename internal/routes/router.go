@@ -80,7 +80,9 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 	modules := router.api.Group(ModulesGroup)
 	{
 		//find a module based on id
-		modules.GET("/:id", router.moduleHandler.FindByID) // GET /api/modules/:id
+		modules.GET("/:id", router.moduleHandler.FindByID)                     // GET /api/modules/:id
+		modules.GET(ModuleGetInfoEndpoint, router.moduleHandler.GetModuleInfo) // GET /api/modules/:id
+
 		//modules.GET(ModuleSearchEndpoint, router.moduleHandler.SearchModulesByTags)
 		modules.GET(ModuleSearchEndpoint, router.moduleHandler.SearchModulesByComponents)
 

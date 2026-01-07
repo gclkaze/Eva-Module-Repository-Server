@@ -36,6 +36,7 @@ type ModuleRepository interface {
 	CreateTx(tx *gorm.DB, dev *models.Module) error
 	Update(mod *models.Module) error
 	FindByID(id uint, preload bool) (*models.Module, error)
+	FindByNameOrReprNameOrRepoName(moduleString string) (*models.Module, error)
 	SearchByKeywords(tags []string) ([]models.Module, error)
 	SearchByComponents(nameTags []string, descrTags []string, tags []string) ([]models.Module, error)
 
@@ -81,6 +82,20 @@ func (r moduleRepository) FindByID(id uint, preload bool) (*models.Module, error
 		return nil, err
 	}
 
+	return &m, nil
+}
+
+func (r moduleRepository) FindByNameOrReprNameOrRepoName(moduleName string) (*models.Module, error) {
+	var m models.Module
+	var err error
+	err = r.db.Where("repo_name = ?", moduleName).
+		First(&m).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
 	return &m, nil
 }
 
@@ -228,7 +243,7 @@ func (r moduleRepository) SearchByComponents(nameTags []string, descrTags []stri
 		return results, err
 	}
 	whereKeywordsClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("keywords.label", tags)
-	selection := "modules.id, modules.repr, modules.title, modules.description "
+	selection := "modules.id, modules.repr, modules.title, modules.description,modules.repo_name "
 	var taggedResults []models.Module
 
 	//need also to be accepted & to have releases, at least one accepted release
@@ -239,12 +254,25 @@ func (r moduleRepository) SearchByComponents(nameTags []string, descrTags []stri
 				ids = append(ids, results[i].ID)
 			}
 			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND modules.id NOT IN ? AND %s", selection, whereKeywordsClause, acceptedReleaseConditionQueryPart)
-			r.db.Preload("Keywords").Raw(q, ids).Scan(&taggedResults)
+			r.db.Raw(q, ids).Scan(&taggedResults)
 
 		} else {
 			q := fmt.Sprintf("SELECT %s FROM modules LEFT JOIN module_keywords ON modules.id = module_keywords.module_id LEFT JOIN keywords ON keywords.id = module_keywords.keyword_id WHERE ( %s ) AND %s ", selection, whereKeywordsClause, acceptedReleaseConditionQueryPart)
-			r.db.Preload("Keywords").Raw(q).Scan(&taggedResults)
+			r.db.Raw(q).Scan(&taggedResults)
 		}
+		//will fetch the tags here
+
+		for i := range taggedResults {
+			err = r.db.
+				Model(&taggedResults[i]).
+				Association("Keywords").
+				Find(&taggedResults[i].Keywords)
+			if err != nil {
+				continue
+				//return err
+			}
+		}
+
 	}
 
 	results = append(results, taggedResults...)

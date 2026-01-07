@@ -54,6 +54,16 @@ func (h *ModuleHandler) FindByID(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.OkWithMessage(module, "Module information retrieved successfully"))
 }
 
+func (h *ModuleHandler) GetModuleInfo(c *gin.Context) {
+	name := c.Query("moduleName")
+	module, err := h.service.GetModuleInfo(name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't find module"))
+		return
+	}
+	c.JSON(http.StatusOK, utils.OkWithMessage(module, "Module information retrieved successfully"))
+}
+
 func (h *ModuleHandler) Delete(c *gin.Context) {
 	id := c.PostForm("id")
 	userID := c.GetUint("userId")

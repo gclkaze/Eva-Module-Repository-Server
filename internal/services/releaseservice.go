@@ -57,6 +57,16 @@ func (s *ReleaseService) GetUserService() *UserService {
 	return s.userService
 }
 
+func (s ReleaseService) GetReleaseAcceptedCountForModule(moduleID uint) (int64, error) {
+	st, err := s.statusRepo.GetStatus(repositories.Accepted)
+	if err != nil {
+		s.logger.Errorf("release service", "couldn't get accepted status with err %s", err.Error())
+		return 0, err
+	}
+
+	return s.repo.GetReleaseCountForModule(moduleID, st.ID)
+}
+
 func (s ReleaseService) GetDefaultDistFilename() string {
 	return s.defaultDistFilename
 }
@@ -194,6 +204,20 @@ func (s ReleaseService) moduleHasPendingRelease(modID uint) (bool, error) {
 		return false, err
 	}
 	return len(releases) != 0, nil
+}
+
+func (s ReleaseService) GetModuleAcceptedReleases(modID uint) ([]models.ModuleRelease, error) {
+	var releases []models.ModuleRelease
+	st, err := s.statusRepo.GetStatus(repositories.Accepted)
+	if err != nil {
+		return releases, err
+	}
+
+	releases, err = s.repo.GetModuleReleasesWithStatus(modID, st.ID)
+	if err != nil {
+		return releases, err
+	}
+	return releases, nil
 }
 
 func (s ReleaseService) userHasPendingRelease(userID uint) (bool, error) {
