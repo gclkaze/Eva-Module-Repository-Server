@@ -23,6 +23,7 @@ package services
 import (
 	"fmt"
 	"path"
+	"time"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
@@ -358,6 +359,8 @@ func (s *ReleaseService) AcceptModuleRelease(userID uint, releaseID uint) (uint,
 	}
 
 	rel.Status = *st
+	now := time.Now()
+	rel.ReleasedAt = &now
 	rel.StatusID = st.ID
 	err = s.repo.Update(rel)
 	if err != nil {

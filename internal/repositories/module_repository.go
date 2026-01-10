@@ -87,8 +87,7 @@ func (r moduleRepository) FindByID(id uint, preload bool) (*models.Module, error
 
 func (r moduleRepository) FindByNameOrReprNameOrRepoName(moduleName string) (*models.Module, error) {
 	var m models.Module
-	var err error
-	err = r.db.Where("repo_name = ?", moduleName).
+	err := r.db.Preload("Owner").Preload("Keywords").Preload("Owner.Type").Preload("Owner.Type").Where("repo_name = ?", moduleName).
 		First(&m).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
