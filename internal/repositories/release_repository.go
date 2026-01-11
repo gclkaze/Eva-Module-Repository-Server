@@ -24,6 +24,7 @@ package repositories
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
@@ -47,7 +48,9 @@ type ReleaseRepository interface {
 	GetCount() (int64, error)
 	FindByModuleIDAndVersionExceptOne(ID uint, modID uint, version string) (*models.ModuleRelease, error)
 	GetModuleReleaseByVersion(id uint, version string) (*models.ModuleRelease, error)
+	GetModuleReleaseByVersionAndStatus(id uint, version string, stID uint) (*models.ModuleRelease, error)
 	GetReleaseCountForModule(moduleID uint, statusID uint) (int64, error)
+	GetLastModuleRelease(id uint, stID uint) (*models.ModuleRelease, error)
 }
 
 type releaseRepository struct {
@@ -132,7 +135,7 @@ func (r *releaseRepository) Update(mr *models.ModuleRelease) error {
 
 func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, error) {
 	var results []models.ModuleRelease
-	err := r.db.Where("module_id = ?", id).Find(&results).Error
+	err := r.db.Where("module_id = ? AND released_at IS NOT NULL", id).Order("released_at DESC").Find(&results).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -144,7 +147,39 @@ func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, e
 
 func (r releaseRepository) GetModuleReleaseByVersion(id uint, version string) (*models.ModuleRelease, error) {
 	var result models.ModuleRelease
-	err := r.db.Where("module_id = ? AND version = ?", id, version).Find(&result).Error
+	err := r.db.Where("module_id = ? AND version = ?", id, version).First(&result).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (r releaseRepository) GetModuleReleaseByVersionAndStatus(id uint, version string, stID uint) (*models.ModuleRelease, error) {
+	var result models.ModuleRelease
+	version = strings.TrimSpace(version)
+	versionWithoutV := version
+	if version[0] == 'v' {
+		versionWithoutV = version[1:]
+	}
+	err := r.db.Where("module_id = ? AND ( version = ? OR version = ? ) AND status_id = ?", id, version, versionWithoutV, stID).First(&result).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (r releaseRepository) GetLastModuleRelease(id uint, stID uint) (*models.ModuleRelease, error) {
+	var result models.ModuleRelease
+	err := r.db.Where("module_id = ? AND status_id = ? AND released_at IS NOT NULL", id, stID).
+		Order("released_at DESC").
+		First(&result).Error
+
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -181,7 +216,7 @@ func (r releaseRepository) FindByModuleIDAndVersionExceptOne(ID uint, modID uint
 
 func (r releaseRepository) GetModuleReleasesWithStatus(id uint, statusID uint) ([]models.ModuleRelease, error) {
 	var results []models.ModuleRelease
-	err := r.db.Where("module_id = ? AND status_id = ?", id, statusID).Find(&results).Error
+	err := r.db.Where("module_id = ? AND status_id = ?", id, statusID).Order("released_at DESC").Find(&results).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -251,7 +286,7 @@ func (r releaseRepository) SearchModuleReleasesByTags(id uint, tags []string) ([
 	whereKeywordsClause := utils.BuildWhereConditionStringForUniqueAttrsContaining("keywords.label", tags)
 	selection := "module_releases.id, module_releases.version, module_releases.released_at, module_releases.description,module_releases.disk_size "
 
-	q := fmt.Sprintf("SELECT %s FROM module_releases LEFT JOIN release_keywords ON module_releases.id = release_keywords.module_release_id LEFT JOIN keywords ON keywords.id = release_keywords.keyword_id WHERE ( %s ) AND module_releases.module_id = ? ", selection, whereKeywordsClause)
+	q := fmt.Sprintf("SELECT %s FROM module_releases LEFT JOIN release_keywords ON module_releases.id = release_keywords.module_release_id LEFT JOIN keywords ON keywords.id = release_keywords.keyword_id WHERE ( %s ) AND module_releases.module_id = ? AND module_releases.released_at IS NOT NULL ORDER BY released_at DESC", selection, whereKeywordsClause)
 
 	err := r.db.Raw(q, id).Scan(&results).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {

@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/services"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/gin-gonic/gin"
@@ -56,12 +57,36 @@ func (h *ModuleHandler) FindByID(c *gin.Context) {
 
 func (h *ModuleHandler) GetModuleInfo(c *gin.Context) {
 	name := c.Query("moduleName")
-	module, err := h.service.GetModuleInfo(name)
+
+	module, release, err := utils.ParseModuleReleaseVersion(name)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't find module"))
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't identify the release"))
 		return
 	}
-	c.JSON(http.StatusOK, utils.OkWithMessage(module, "Module information retrieved successfully"))
+
+	if module == "" {
+		c.JSON(http.StatusInternalServerError, utils.ErrWithSimpleMessage("Couldn't identify the user's provided typed module name "+name))
+		return
+	}
+
+	if release == "" {
+		var module *dto.ModuleEnrichedDTO
+		module, err = h.service.GetModuleInfo(name)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't find module"))
+			return
+		}
+		c.JSON(http.StatusOK, utils.OkWithMessage(module, "Module information retrieved successfully"))
+		return
+	}
+
+	releaseDTO, err := h.service.GetModuleReleaseInfo(module, release)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't find module and release "+name))
+		return
+	}
+	c.JSON(http.StatusOK, utils.OkWithMessage(releaseDTO, "Module release information retrieved successfully"))
+
 }
 
 func (h *ModuleHandler) Delete(c *gin.Context) {

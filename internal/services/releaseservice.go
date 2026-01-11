@@ -104,6 +104,24 @@ func (s ReleaseService) GetModuleReleaseByVersion(id uint, version string) (*mod
 	return s.repo.GetModuleReleaseByVersion(id, version)
 }
 
+func (s ReleaseService) GetAcceptedModuleReleaseByVersion(id uint, version string) (*models.ModuleRelease, error) {
+	st, err := s.statusRepo.GetStatus(repositories.Accepted)
+	if err != nil {
+		s.logger.Errorf("release service", "couldn't get accepted status with err %s", err.Error())
+		return nil, err
+	}
+	return s.repo.GetModuleReleaseByVersionAndStatus(id, version, st.ID)
+}
+
+func (s ReleaseService) GetLastModuleRelease(id uint) (*models.ModuleRelease, error) {
+	st, err := s.statusRepo.GetStatus(repositories.Accepted)
+	if err != nil {
+		s.logger.Errorf("release service", "couldn't get accepted status with err %s", err.Error())
+		return nil, err
+	}
+	return s.repo.GetLastModuleRelease(id, st.ID)
+}
+
 func (s *ReleaseService) removeModuleReleaseFolder(modID uint, releaseID uint) (bool, error) {
 	release, err := s.repo.GetModuleRelease(modID, releaseID)
 	if err != nil {

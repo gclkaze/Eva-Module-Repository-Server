@@ -21,9 +21,11 @@
 package utils
 
 import (
+	"errors"
 	"math/rand/v2"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/gosimple/slug"
 	"golang.org/x/crypto/bcrypt"
@@ -35,6 +37,7 @@ var handleRegex = regexp.MustCompile(
 	`^[a-zA-Z][a-zA-Z0-9]*(?:[._-][a-zA-Z0-9]+)*$`,
 )
 var reprRegex = regexp.MustCompile(`^[A-Za-z0-9]+( [A-Za-z0-9]+)*$`)
+var ErrInvalidModuleReleaseVersion = errors.New("invalid module-release version")
 
 var ModuleReprMin = 3
 var ModuleReprMax = 50
@@ -109,5 +112,45 @@ func IsValidModuleName(moduleName string) bool {
 		return false
 	}
 	return reprRegex.MatchString(moduleName)
+}
 
+func ParseModuleReleaseVersion(s string) (string, string, error) {
+	parts := strings.Split(s, "@")
+
+	switch len(parts) {
+	case 1:
+		// "X"
+		if parts[0] == "" {
+			return "", "", ErrInvalidModuleReleaseVersion
+		}
+		return parts[0], "", nil
+
+	case 2:
+		// "X@Y"
+		module := parts[0]
+		release := parts[1]
+
+		if module == "" || release == "" {
+			return "", "", ErrInvalidModuleReleaseVersion
+		}
+
+		if release == "latest" {
+			return module, "latest", nil
+		}
+
+		// Normalize semver: must start with 'v'
+		if !strings.HasPrefix(release, "v") {
+			release = "v" + release
+		}
+
+		if !semver.IsValid(release) {
+			return "", "", ErrInvalidModuleReleaseVersion
+		}
+
+		return module, release, nil
+
+	default:
+		// "X@Y@Z..."
+		return "", "", ErrInvalidModuleReleaseVersion
+	}
 }

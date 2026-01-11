@@ -465,6 +465,53 @@ func (s *ModuleService) FindByID(id uint) (*dto.ModuleDTO, error) {
 	return res, error
 }
 
+func (s *ModuleService) GetModuleReleaseInfo(moduleName string, releaseName string) (*dto.ModuleEnrichedDTO, error) {
+	moduleName = strings.TrimSpace(moduleName)
+	if moduleName == "" {
+		return nil, fmt.Errorf("empty module name provided")
+	}
+
+	releaseName = strings.TrimSpace(releaseName)
+	if releaseName == "" {
+		return nil, fmt.Errorf("empty module version provided")
+	}
+
+	//lets see if we know this version token, is it equal to "latest"?
+	moduleName = strings.ToLower(moduleName)
+	releaseName = strings.ToLower(releaseName)
+
+	theModule, err := s.repo.FindByNameOrReprNameOrRepoName(moduleName)
+	if err != nil {
+		return nil, err
+	}
+	if theModule == nil {
+		return nil, fmt.Errorf("no module found with name %s", moduleName)
+	}
+
+	if releaseName == "latest" {
+		var theRelease *models.ModuleRelease
+		theRelease, err = s.releaseService.GetLastModuleRelease(theModule.ID)
+		if err != nil {
+			return nil, err
+		}
+		if theRelease == nil {
+			return nil, fmt.Errorf("no release found with version %s@%s", moduleName, releaseName)
+		}
+		return dto.NewModuleEnrichedDTO(theModule, []models.ModuleRelease{*theRelease}), nil
+	}
+
+	//if not, we need to retrieve the release from the db,the release needs to be accepted ofc!
+	theRelease, err := s.releaseService.GetAcceptedModuleReleaseByVersion(theModule.ID, releaseName)
+	if err != nil {
+		return nil, err
+	}
+	if theRelease == nil {
+		return nil, fmt.Errorf("no release found with version %s@%s", moduleName, releaseName)
+	}
+
+	return dto.NewModuleEnrichedDTO(theModule, []models.ModuleRelease{*theRelease}), nil
+}
+
 func (s *ModuleService) GetModuleInfo(moduleName string) (*dto.ModuleEnrichedDTO, error) {
 	moduleName = strings.TrimSpace(moduleName)
 	if moduleName == "" {
