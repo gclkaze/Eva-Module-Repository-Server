@@ -63,6 +63,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	errPwd := utils.ValidatePassword(pwd, email)
+	if errPwd != nil {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage(errPwd.Error()))
+		return
+	}
+
 	firstName := strings.TrimSpace(req.FirstName)
 	if firstName == "" {
 		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("No first name provided"))

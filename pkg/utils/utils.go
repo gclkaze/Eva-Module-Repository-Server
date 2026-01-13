@@ -22,10 +22,12 @@ package utils
 
 import (
 	"errors"
+	"fmt"
 	"math/rand/v2"
 	"regexp"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/gosimple/slug"
 	"golang.org/x/crypto/bcrypt"
@@ -38,9 +40,11 @@ var handleRegex = regexp.MustCompile(
 )
 var reprRegex = regexp.MustCompile(`^[A-Za-z0-9]+( [A-Za-z0-9]+)*$`)
 var ErrInvalidModuleReleaseVersion = errors.New("invalid module-release version")
-
+var PasswordLengthMin = 12
+var PasswordLengthMax = 128
 var ModuleReprMin = 3
 var ModuleReprMax = 50
+var PasswordQualityCheckDisabled = false
 
 func StringToUint(str string) (uint, error) {
 	// Convert string to uint64 first
@@ -153,4 +157,42 @@ func ParseModuleReleaseVersion(s string) (string, string, error) {
 		// "X@Y@Z..."
 		return "", "", ErrInvalidModuleReleaseVersion
 	}
+}
+
+var commonPasswords = map[string]struct{}{
+	"password":  {},
+	"123456":    {},
+	"123456789": {},
+	"qwerty":    {},
+	"letmein":   {},
+	"admin":     {},
+}
+
+func ValidatePassword(password, email string) error {
+	if PasswordQualityCheckDisabled {
+		return nil
+	}
+	pw := strings.TrimSpace(password)
+
+	length := utf8.RuneCountInString(pw)
+	if length < PasswordLengthMin {
+		return fmt.Errorf("password must be at least %d characters long", PasswordLengthMin)
+	}
+	if length > PasswordLengthMax {
+		return errors.New("password is too long")
+	}
+
+	lowerPw := strings.ToLower(pw)
+	if _, ok := commonPasswords[lowerPw]; ok {
+		return errors.New("password is too common")
+	}
+
+	if email != "" {
+		user := strings.ToLower(strings.Split(email, "@")[0])
+		if user != "" && strings.Contains(lowerPw, user) {
+			return errors.New("password must not contain your email or username")
+		}
+	}
+
+	return nil
 }

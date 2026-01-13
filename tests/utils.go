@@ -27,6 +27,7 @@ import (
 	"path"
 
 	"github.com/gclkaze/evamodulerepositoryserver/cmd/server"
+	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -34,6 +35,8 @@ var TheTestServer *server.EvaModuleRepositoryServer
 var OldUploadLimit int64
 
 func StartServer() *gin.Engine {
+	utils.PasswordQualityCheckDisabled = true
+
 	TheTestServer = server.NewEvaModuleRepositoryServer()
 	currentPath, _ := os.Getwd()
 	p := path.Join(currentPath, "application_test.properties")
@@ -67,6 +70,7 @@ func ClearModuleFolders() {
 }
 
 func TeardownServer() {
+	utils.PasswordQualityCheckDisabled = false
 	if TheTestServer == nil {
 		fmt.Print("test Server hasn't been initialized")
 		os.Exit(1)
