@@ -89,7 +89,9 @@ func (r moduleRepository) FindByID(id uint, preload bool) (*models.Module, error
 
 func (r moduleRepository) FindByOwner(owner *models.ModuleOwner) ([]models.Module, error) {
 	var modules []models.Module
-	err := r.db.Preload("Owner").Preload("Keywords").Preload("Owner.Type").Preload("Owner.Type").Find(&modules).Error
+	err := r.db.Preload("Owner").Preload("Keywords").Preload("Owner.Type").Preload("Owner.Type").
+		Where("owner_id = ?", owner.ID).
+		Find(&modules).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
