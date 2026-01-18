@@ -119,10 +119,20 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 			})), router.moduleHandler.Upload)
 
 		modules.POST(ModuleUpdateEndpoint, router.middleWare.AuthMiddleware(be.GetJWTSecret()),
+
+			router.middleWare.MaxBodySize(r.MaxMultipartMemory),
+			func(c *gin.Context) {
+				_, err := c.MultipartForm()
+				if err != nil {
+					c.JSON(http.StatusRequestEntityTooLarge, utils.Err(err, "file too large"))
+					return
+				}
+			},
+
 			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 				models.DeleteMyModule,
 				models.CreateMyModule,
-				models.UpdateModules,
+				/*				models.UpdateModules,*/
 			})), router.moduleHandler.Update)
 
 		modules.POST(ModuleSuggestEndpoint, router.middleWare.AuthMiddleware(be.GetJWTSecret()),

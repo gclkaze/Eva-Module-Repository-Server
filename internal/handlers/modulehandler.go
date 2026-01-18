@@ -165,14 +165,18 @@ func (h *ModuleHandler) Update(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, utils.Err(nil, "Title is required"))
 		return
 	}
-
-	file, err := c.FormFile("file")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, utils.Err(err, "File upload failed"))
+	form, err := c.MultipartForm()
+	if err != nil && strings.Contains(err.Error(), "http: request body too large") {
+		c.JSON(http.StatusRequestEntityTooLarge, utils.Err(err, "file too large"))
+		return
+	}
+	files, ok := form.File["file"]
+	if !ok {
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Uploaded file is empty"))
 		return
 	}
 
-	id, err := h.service.UpdateUserModule(userID, modIDUint, title, description, repr, file, tags, c)
+	id, err := h.service.UpdateUserModule(userID, modIDUint, title, description, repr, files, tags, c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't update module"))
 		return

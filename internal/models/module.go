@@ -42,10 +42,10 @@ func NewModule(title string, repr string, description string, ownerID uint, owne
 	return &Module{Title: title, Repr: repr, Description: description, OwnerID: ownerID, Owner: owner, Keywords: keywords, RepoName: repoName}
 }
 
-func (m *Module) Update(title string, repr string, description string, keywords []Keyword, repoName string) {
+func (m *Module) Update(title string, repr string, description string, keywords []Keyword /*, repoName string*/) {
 	m.Title = title
 	m.Repr = repr
 	m.Description = description
 	m.Keywords = keywords
-	m.RepoName = repoName
+	//	m.RepoName = repoName
 }

@@ -24,7 +24,6 @@ package services
 import (
 	"fmt"
 	"mime/multipart"
-	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -337,7 +336,7 @@ func (s *ModuleService) CreateModuleTx(
 	return mod.ID, nil
 }
 
-func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, descr string, repr string, file *multipart.FileHeader, tags string, c *gin.Context) (uint, error) {
+func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, descr string, repr string, files []*multipart.FileHeader, tags string, c *gin.Context) (uint, error) {
 	mod, err := s.GetModule(modID)
 	if err != nil {
 		return 0, err
@@ -373,7 +372,7 @@ func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, 
 		return 0, err
 	}
 
-	mod.Update(title, repr, descr, keywords, utils.GetRepoName(repr))
+	mod.Update(title, repr, descr, keywords /*, utils.GetRepoName(repr)*/)
 	err = s.repo.Update(mod)
 
 	if err != nil {
@@ -391,11 +390,15 @@ func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, 
 		utils.CleanFolder(modPath)
 	}
 
-	modPath = fmt.Sprintf("%s/%s", modPath, file.Filename)
-	if err := c.SaveUploadedFile(file, modPath); err != nil {
-		s.logger.Errorf("module_service", "%s", err)
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save file"})
-		return 0, err
+	for i := range files {
+		file := files[i]
+		filePath := fmt.Sprintf("%s/%s", modPath, file.Filename)
+		//filePath := fmt.Sprintf("%s/%s", modPath, file.Filename)
+		if err := c.SaveUploadedFile(file, filePath); err != nil {
+			s.logger.Errorf("module_service", "%s", err)
+			return 0, err
+		}
+
 	}
 
 	return mod.ID, nil
