@@ -86,6 +86,12 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 		//modules.GET(ModuleSearchEndpoint, router.moduleHandler.SearchModulesByTags)
 		modules.GET(ModuleSearchEndpoint, router.moduleHandler.SearchModulesByComponents)
 
+		modules.GET(GetUserModulesEndpoint, router.middleWare.AuthMiddleware(be.GetJWTSecret()),
+			router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+				models.DeleteMyModule,
+				models.CreateMyModule,
+			})), router.moduleHandler.GetUserModules)
+
 		//delete a module!
 		modules.POST(ModuleDeleteEndpoint,
 			router.middleWare.AuthMiddleware(be.GetJWTSecret()),

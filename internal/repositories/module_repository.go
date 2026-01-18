@@ -45,6 +45,8 @@ type ModuleRepository interface {
 	GetMaxID() (uint, error)
 	ReprExists(repr string) (bool, error)
 	ReprExistsExcept(id uint, repr string) (bool, error)
+
+	FindByOwner(owner *models.ModuleOwner) ([]models.Module, error)
 }
 
 type moduleRepository struct {
@@ -83,6 +85,19 @@ func (r moduleRepository) FindByID(id uint, preload bool) (*models.Module, error
 	}
 
 	return &m, nil
+}
+
+func (r moduleRepository) FindByOwner(owner *models.ModuleOwner) ([]models.Module, error) {
+	var modules []models.Module
+	err := r.db.Preload("Owner").Preload("Keywords").Preload("Owner.Type").Preload("Owner.Type").Find(&modules).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return modules, nil
 }
 
 func (r moduleRepository) FindByNameOrReprNameOrRepoName(moduleName string) (*models.Module, error) {

@@ -21,12 +21,15 @@
 package repositories
 
 import (
+	"errors"
+
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"gorm.io/gorm"
 )
 
 type ModuleOwnerRepository interface {
 	Create(t *models.ModuleOwnerType, entityID uint) (*models.ModuleOwner, error)
+	Find(t *models.ModuleOwnerType, entityID uint) (*models.ModuleOwner, error)
 }
 
 type moduleOwnerRepository struct {
@@ -45,4 +48,17 @@ func (m *moduleOwnerRepository) Create(t *models.ModuleOwnerType, entityID uint)
 		return nil, res.Error
 	}
 	return moduleOwner, nil
+}
+
+func (m *moduleOwnerRepository) Find(t *models.ModuleOwnerType, entityID uint) (*models.ModuleOwner, error) {
+	var res models.ModuleOwner
+	err := m.db.Where("type_id = ? AND entity_id = ?", t.ID, entityID).
+		First(&res).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }

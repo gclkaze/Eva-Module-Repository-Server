@@ -234,3 +234,15 @@ func (h *ModuleHandler) SearchModulesByComponents(c *gin.Context) {
 
 	c.JSON(http.StatusOK, utils.OkWithMessage(modules, "Module search was complete"))
 }
+
+func (h *ModuleHandler) GetUserModules(c *gin.Context) {
+	userID := c.GetUint("userId")
+
+	modules, err := h.service.GetUserModules(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't find the modules"))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.OkWithMessage(modules, "Module search was complete"))
+}

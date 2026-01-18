@@ -46,6 +46,14 @@ func (s *ModuleOwnershipService) CreateModuleOwner(t models.ModuleOwnerTypeDef, 
 	return s.moduleOwnerRepo.Create(typ, entityID)
 }
 
+func (s *ModuleOwnershipService) GetModuleOwner(t models.ModuleOwnerTypeDef, entityID uint) (*models.ModuleOwner, error) {
+	typ, err := s.moduleOwnerTypeRepo.FindByLabel(t.String())
+	if err != nil {
+		return nil, err
+	}
+	return s.moduleOwnerRepo.Find(typ, entityID)
+}
+
 func (s *ModuleOwnershipService) CreateModuleOwnerTx(tx *gorm.DB, t models.ModuleOwnerTypeDef, entityID uint) (*models.ModuleOwner, error) {
 	typ, err := s.moduleOwnerTypeRepo.FindByLabelTx(tx, t.String())
 	if err != nil {

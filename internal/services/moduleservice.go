@@ -725,6 +725,36 @@ func (s ModuleService) SearchByComponents(nameTokens []string, descrTokens []str
 	return dtos, err
 }
 
+func (s ModuleService) GetUserModules(userID uint) ([]dto.ModuleDTO, error) {
+
+	userAccount, err := s.developerService.FindUserByID(userID)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't find user with ID %d", userID)
+	}
+
+	owner, err := s.ownershipService.GetModuleOwner(models.Dev, userAccount.ID)
+	if err != nil {
+		return nil, err
+	}
+	if owner == nil {
+		return nil, nil
+	}
+	results, err := s.repo.FindByOwner(owner)
+	if err != nil {
+		return nil, err
+	}
+	var dtos []dto.ModuleDTO
+	for i := range results {
+		releaseCNT, countErr := s.releaseService.GetReleaseAcceptedCountForModule(results[i].ID)
+		if countErr != nil {
+			s.logger.Errorf("module service", "error while counting accepted releases for the modules %s", countErr.Error())
+			continue
+		}
+		dtos = append(dtos, *dto.NewModuleDTOWithReleaseInformation(results[i], releaseCNT))
+	}
+	return dtos, err
+}
+
 /*
 func (s ModuleService) getColumnTokenConditionString(columnName string, tokens []string) (string, []any) {
 	if len(tokens) == 0 {
