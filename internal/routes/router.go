@@ -176,6 +176,14 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 			models.UpdateReleases,
 		})), router.downloadHandler.DownloadAnyRelease)
 
+		supervision.GET(SuperviseFindReleaseEndpoint+"/:module/:version", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+			models.UpdateReleases,
+		})), router.releaseHandler.FindRelease)
+
+		supervision.GET(SuperviseGetFilterReleaseEndpoint, router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+			models.UpdateReleases,
+		})), router.releaseHandler.GetModuleReleasesByFilter)
+
 		supervision.POST(SuperviseRejectReleaseEndpoint+"/:releaseId", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
 			models.RejectReleases,
 		})), router.releaseHandler.RejectRelease)

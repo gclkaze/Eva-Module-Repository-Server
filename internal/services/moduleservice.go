@@ -758,6 +758,10 @@ func (s ModuleService) GetUserModules(userID uint) ([]dto.ModuleDTO, error) {
 	return dtos, err
 }
 
+func (s ModuleService) GetModulesByOrder(order []uint) ([]models.Module, error) {
+	return s.repo.GetModules(order)
+}
+
 /*
 func (s ModuleService) getColumnTokenConditionString(columnName string, tokens []string) (string, []any) {
 	if len(tokens) == 0 {

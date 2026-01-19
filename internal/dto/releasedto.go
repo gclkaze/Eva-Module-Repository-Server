@@ -33,6 +33,7 @@ type ReleaseDTO struct {
 	Description string     `json:"description" binding:"required"`
 	DiskSize    int64      `json:"diskSize" binding:"required"`
 
+	Status   string       `json:"status" binding:"required"`
 	Keywords []KeywordDTO `json:"keywords" binding:"required"`
 }
 
@@ -42,5 +43,5 @@ func NewReleaseDTO(release models.ModuleRelease) *ReleaseDTO {
 		keywordsdtos = append(keywordsdtos, *NewKeywordDTO(release.Keywords[i]))
 	}
 
-	return &ReleaseDTO{ID: release.ID, Version: release.Version, ReleasedAt: release.ReleasedAt, Description: release.Description, Keywords: keywordsdtos, DiskSize: release.DiskSize}
+	return &ReleaseDTO{ID: release.ID, Version: release.Version, ReleasedAt: release.ReleasedAt, Description: release.Description, Keywords: keywordsdtos, DiskSize: release.DiskSize, Status: release.Status.Label}
 }

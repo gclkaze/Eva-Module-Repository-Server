@@ -58,7 +58,6 @@ func StringToUint(str string) (uint, error) {
 	return u, err
 }
 
-
 func UintToString(i uint) string {
 	return strconv.FormatUint(uint64(i), 10)
 }
@@ -69,7 +68,11 @@ func HashPassword(pw string) (string, error) {
 }
 
 func IsValidVersion(v string) bool {
-	return semver.IsValid("v" + v)
+	v = strings.TrimSpace(v)
+	if v[0] == 'v' {
+		return semver.IsValid(v)
+	}
+	return semver.IsValid(v)
 }
 
 func GetRepoName(input string) string {

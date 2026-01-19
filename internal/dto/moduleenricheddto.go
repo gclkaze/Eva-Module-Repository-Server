@@ -22,5 +22,5 @@ func NewModuleEnrichedDTO(module *models.Module, moduleReleases []models.ModuleR
 	for i := range moduleReleases {
 		releaseInfo = append(releaseInfo, *NewReleaseDTO(moduleReleases[i]))
 	}
-	return &ModuleEnrichedDTO{Title: module.Title, Repr: module.Repr, Description: module.Description, Tags: tags, RepoName: module.RepoName, ReleaseInfo: releaseInfo}
+	return &ModuleEnrichedDTO{ID: module.ID, Title: module.Title, Repr: module.Repr, Description: module.Description, Tags: tags, RepoName: module.RepoName, ReleaseInfo: releaseInfo}
 }

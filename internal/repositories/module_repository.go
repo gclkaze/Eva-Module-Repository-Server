@@ -47,6 +47,8 @@ type ModuleRepository interface {
 	ReprExistsExcept(id uint, repr string) (bool, error)
 
 	FindByOwner(owner *models.ModuleOwner) ([]models.Module, error)
+
+	GetModules([]uint) ([]models.Module, error)
 }
 
 type moduleRepository struct {
@@ -56,6 +58,18 @@ type moduleRepository struct {
 
 func NewModuleRepository(db *gorm.DB, releaseStatusRepo ReleaseStatusRepository) ModuleRepository {
 	return &moduleRepository{db: db, statusRepo: releaseStatusRepo}
+}
+
+func (r moduleRepository) GetModules(moduleOrder []uint) ([]models.Module, error) {
+	var modules []models.Module
+	if err := r.db.
+		Model(&models.Module{}).
+		Preload("Keywords").
+		Where("id IN ?", moduleOrder).
+		Find(&modules).Error; err != nil {
+		return nil, err
+	}
+	return modules, nil
 }
 
 func (r *moduleRepository) GetDB() *gorm.DB {

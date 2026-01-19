@@ -51,6 +51,8 @@ type ReleaseRepository interface {
 	GetModuleReleaseByVersionAndStatus(id uint, version string, stID uint) (*models.ModuleRelease, error)
 	GetReleaseCountForModule(moduleID uint, statusID uint) (int64, error)
 	GetLastModuleRelease(id uint, stID uint) (*models.ModuleRelease, error)
+
+	GetModuleReleasesByFilter(p *models.ReleaseFilterParams) ([]models.ModuleRelease, error)
 }
 
 type releaseRepository struct {
@@ -147,7 +149,12 @@ func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, e
 
 func (r releaseRepository) GetModuleReleaseByVersion(id uint, version string) (*models.ModuleRelease, error) {
 	var result models.ModuleRelease
-	err := r.db.Where("module_id = ? AND version = ?", id, version).First(&result).Error
+	version = strings.TrimSpace(version)
+	versionWithoutV := version
+	if version[0] == 'v' {
+		versionWithoutV = version[1:]
+	}
+	err := r.db.Where("module_id = ? AND ( version = ? OR version = ? )", id, version, versionWithoutV).First(&result).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -297,4 +304,151 @@ func (r releaseRepository) SearchModuleReleasesByTags(id uint, tags []string) ([
 	}
 
 	return results, nil
+}
+
+func (r *releaseRepository) GetModuleReleasesByFilter(p *models.ReleaseFilterParams) ([]models.ModuleRelease, error) {
+	var results []models.ModuleRelease
+
+	q := r.db.Model(&models.ModuleRelease{}).
+		Preload("Status").
+		Preload("Keywords").
+		Preload("Creator.UserAccount").
+		Preload("Statistics").
+		Joins("JOIN modules m ON m.id = module_releases.module_id").
+		Joins("JOIN developers d ON d.id = module_releases.creator_id").
+		Joins("JOIN user_accounts ua ON ua.id = d.user_id")
+
+	if p == nil || p.IsEmpty() {
+		err := q.Order("module_releases.created_at DESC").Find(&results).Error
+		return results, err
+	}
+
+	// Status (by label)
+	if len(p.Status) > 0 {
+		q = q.Joins("JOIN module_release_statuses s ON s.id = module_releases.status_id").
+			Where("s.label IN ?", p.Status)
+	}
+
+	// Versions (exact)
+	if len(p.Versions) > 0 {
+		q = q.Where("module_releases.version IN ?", p.Versions)
+	}
+
+	// Tags (keywords) - matches ANY of the tags
+	/*	if len(p.Tags) > 0 {
+		q = q.Joins("JOIN release_keywords rk ON rk.module_release_id = module_releases.id").
+			Joins("JOIN keywords k ON k.id = rk.keyword_id").
+			Where("k.label IN ?", p.Tags).
+			Distinct("module_releases.*")
+	}*/
+
+	if len(p.Tags) > 0 {
+		// Match if release has at least one tag OR module has at least one tag
+		q = q.Where(`
+		EXISTS (
+			SELECT 1
+			FROM release_keywords rk
+			JOIN keywords k ON k.id = rk.keyword_id
+			WHERE rk.module_release_id = module_releases.id
+			  AND k.label IN ?
+		)
+		OR EXISTS (
+			SELECT 1
+			FROM module_keywords mk
+			JOIN keywords k2 ON k2.id = mk.keyword_id
+			WHERE mk.module_id = m.id
+			  AND k2.label IN ?
+		)
+	`, p.Tags, p.Tags)
+	}
+
+	// ModuleName: match module repr OR title (LIKE, OR across terms)
+	if len(p.ModuleName) > 0 {
+		sub := r.db
+		for i, term := range p.ModuleName {
+			like := "%" + term + "%"
+			if i == 0 {
+				sub = sub.Where("(m.repr LIKE ? OR m.title LIKE ?)", like, like)
+			} else {
+				sub = sub.Or("(m.repr LIKE ? OR m.title LIKE ?)", like, like)
+			}
+		}
+		q = q.Where(sub)
+	}
+
+	// RepoName: match module repo_name (LIKE, OR across terms)
+	if len(p.RepoName) > 0 {
+		sub := r.db
+		for i, term := range p.RepoName {
+			like := "%" + term + "%"
+			if i == 0 {
+				sub = sub.Where("m.repo_name LIKE ?", like)
+			} else {
+				sub = sub.Or("m.repo_name LIKE ?", like)
+			}
+		}
+		q = q.Where(sub)
+	}
+
+	// CreatedAfter (gorm.Model.CreatedAt)
+	if p.CreatedAfter != nil {
+		q = q.Where("module_releases.created_at > ?", *p.CreatedAfter)
+	}
+
+	// ReleasedAfter (ReleasedAt is nullable)
+	if !p.ReleasedAfter.IsZero() {
+		q = q.Where("module_releases.released_at IS NOT NULL").
+			Where("module_releases.released_at > ?", p.ReleasedAfter)
+	}
+
+	// Description (LIKE, OR across terms)
+	if len(p.Description) > 0 {
+		sub := r.db
+		for i, term := range p.Description {
+			like := "%" + term + "%"
+			if i == 0 {
+				sub = sub.Where("module_releases.description LIKE ?", like)
+			} else {
+				sub = sub.Or("module_releases.description LIKE ?", like)
+			}
+		}
+		q = q.Where(sub)
+	}
+
+	// Creator (LIKE against handle/first/last, OR across terms)
+	if len(p.Creator) > 0 {
+		sub := r.db
+		for i, term := range p.Creator {
+			like := "%" + term + "%"
+			if i == 0 {
+				sub = sub.Where(
+					"(d.handle LIKE ? OR d.first_name LIKE ? OR d.last_name LIKE ?)",
+					like, like, like,
+				)
+			} else {
+				sub = sub.Or(
+					"(d.handle LIKE ? OR d.first_name LIKE ? OR d.last_name LIKE ?)",
+					like, like, like,
+				)
+			}
+		}
+		q = q.Where(sub)
+	}
+
+	// CreatorEmail (LIKE, OR across terms)
+	if len(p.CreatorEmail) > 0 {
+		sub := r.db
+		for i, term := range p.CreatorEmail {
+			like := "%" + term + "%"
+			if i == 0 {
+				sub = sub.Where("ua.email LIKE ?", like)
+			} else {
+				sub = sub.Or("ua.email LIKE ?", like)
+			}
+		}
+		q = q.Where(sub)
+	}
+
+	err := q.Order("module_releases.created_at DESC").Find(&results).Error
+	return results, err
 }

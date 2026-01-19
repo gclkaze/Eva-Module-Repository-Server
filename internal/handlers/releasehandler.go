@@ -25,7 +25,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/services"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/gin-gonic/gin"
@@ -57,6 +59,24 @@ func (h *ReleaseHandler) RejectRelease(c *gin.Context) {
 	c.JSON(http.StatusOK, utils.OkWithMessage(result, "Release was rejected successfully"))
 }
 
+func (h *ReleaseHandler) FindRelease(c *gin.Context) {
+	//userID := c.GetUint("userId")
+	moduleName := c.Param("module")
+
+	version := c.Param("version")
+	if !utils.IsValidVersion(version) {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("Invalid Version ID format"))
+		return
+	}
+
+	result, err := h.service.FindModuleRelease(moduleName, version)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't find module release"))
+		return
+	}
+	c.JSON(http.StatusOK, utils.OkWithMessage(result, "Release was found successfully"))
+}
+
 func (h *ReleaseHandler) AcceptRelease(c *gin.Context) {
 	userID := c.GetUint("userId")
 	releaseID := c.Param("releaseId")
@@ -73,6 +93,89 @@ func (h *ReleaseHandler) AcceptRelease(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, utils.OkWithMessage(result, "Release was accepted successfully"))
+}
+
+func (h *ReleaseHandler) GetModuleReleasesByFilter(c *gin.Context) {
+	p := models.NewReleaseFilterParams()
+
+	// string slice filters (GET query params)
+	p.Status = c.QueryArray("status")
+	p.Versions = c.QueryArray("versions")
+	p.Tags = c.QueryArray("tags")
+	p.ModuleName = c.QueryArray("module")
+	p.RepoName = c.QueryArray("repo")
+	p.Description = c.QueryArray("description")
+	p.Creator = c.QueryArray("creator")
+	p.CreatorEmail = c.QueryArray("creator-email")
+
+	// created-after (RFC3339)
+	if v := c.Query("created-after"); v != "" {
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			c.JSON(
+				http.StatusBadRequest,
+				utils.Err(err, "Invalid created-after timestamp format"),
+			)
+			return
+		}
+		p.CreatedAfter = &t
+	}
+
+	// released-after (RFC3339)
+	if v := c.Query("released-after"); v != "" {
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			c.JSON(
+				http.StatusBadRequest,
+				utils.Err(err, "Invalid released-after timestamp format"),
+			)
+			return
+		}
+		p.ReleasedAfter = t
+	}
+
+	// normalize slices (trim, dedupe, drop empty)
+	p.Status = normalizeStringSlice(p.Status)
+	p.Versions = normalizeStringSlice(p.Versions)
+	p.Tags = normalizeStringSlice(p.Tags)
+	p.ModuleName = normalizeStringSlice(p.ModuleName)
+	p.RepoName = normalizeStringSlice(p.RepoName)
+	p.Description = normalizeStringSlice(p.Description)
+	p.Creator = normalizeStringSlice(p.Creator)
+	p.CreatorEmail = normalizeStringSlice(p.CreatorEmail)
+
+	// service call
+	result, err := h.service.GetModuleReleasesClustered(p)
+	if err != nil {
+		c.JSON(
+			http.StatusInternalServerError,
+			utils.Err(err, "Couldn't retrieve module releases"),
+		)
+		return
+	}
+
+	c.JSON(
+		http.StatusOK,
+		utils.OkWithMessage(result, "Module releases retrieved successfully"),
+	)
+}
+
+func normalizeStringSlice(in []string) []string {
+	out := make([]string, 0, len(in))
+	seen := map[string]struct{}{}
+
+	for _, v := range in {
+		v = strings.TrimSpace(v)
+		if v == "" {
+			continue
+		}
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+	return out
 }
 
 func (h *ReleaseHandler) CancelRelease(c *gin.Context) {

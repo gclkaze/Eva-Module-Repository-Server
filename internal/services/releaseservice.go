@@ -481,6 +481,27 @@ func (s *ReleaseService) RejectModuleRelease(userID uint, releaseID uint) (uint,
 	return releaseID, nil
 }
 
+func (s *ReleaseService) FindModuleRelease(moduleName string, version string) (*dto.ReleaseDTO, error) {
+	m, err := s.moduleService.repo.FindByNameOrReprNameOrRepoName(moduleName)
+	if err != nil {
+		return nil, err
+	}
+
+	if m == nil {
+		return nil, fmt.Errorf("couldn't find module %s@%s", moduleName, version)
+	}
+
+	theRelease, err := s.repo.GetModuleReleaseByVersion(m.ID, version)
+	if err != nil {
+		return nil, err
+	}
+
+	if theRelease == nil {
+		return nil, fmt.Errorf("couldn't find the module release %s@%s", moduleName, version)
+	}
+	return dto.NewReleaseDTO(*theRelease), nil
+}
+
 func (s *ReleaseService) CancelModuleRelease(userID uint, releaseID uint) (uint, error) {
 	rel, err := s.repo.FindByID(releaseID)
 	if err != nil {
@@ -555,6 +576,58 @@ func (s *ReleaseService) ChangeToPendingModuleRelease(userID uint, releaseID uin
 	}
 
 	return releaseID, nil
+}
+func (s *ReleaseService) GetModuleReleasesClustered(p *models.ReleaseFilterParams) ([]dto.ModuleEnrichedDTO, error) {
+	releases, err := s.repo.GetModuleReleasesByFilter(p)
+	if err != nil {
+		return nil, err
+	}
+	if len(releases) == 0 {
+		return []dto.ModuleEnrichedDTO{}, nil
+	}
+
+	// 1) Group releases by module, keep stable module order (first appearance)
+	moduleOrder := make([]uint, 0, 16)
+	seen := make(map[uint]struct{}, 16)
+	relsByModule := make(map[uint][]models.ModuleRelease, 16)
+
+	for _, r := range releases {
+		relsByModule[r.ModuleID] = append(relsByModule[r.ModuleID], r)
+
+		if _, ok := seen[r.ModuleID]; !ok {
+			seen[r.ModuleID] = struct{}{}
+			moduleOrder = append(moduleOrder, r.ModuleID)
+		}
+	}
+
+	modules, err := s.moduleService.GetModulesByOrder(moduleOrder)
+	if err != nil {
+		return nil, err
+	}
+
+	modByID := make(map[uint]*models.Module, len(modules))
+	for i := range modules {
+		m := &modules[i]
+		modByID[m.ID] = m
+	}
+
+	// 3) Build DTOs in stable module order
+	out := make([]dto.ModuleEnrichedDTO, 0, len(moduleOrder))
+	for _, mid := range moduleOrder {
+		m, ok := modByID[mid]
+		if !ok {
+			// If FK integrity holds, this should not happen. Skip defensively.
+			continue
+		}
+
+		dto := dto.NewModuleEnrichedDTO(m, relsByModule[mid])
+		// Your constructor currently does not set ID; set it here.
+		dto.ID = m.ID
+
+		out = append(out, *dto)
+	}
+
+	return out, nil
 }
 
 func (s *ReleaseService) Initialize() {
