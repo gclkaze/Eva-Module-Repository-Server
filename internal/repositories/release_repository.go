@@ -51,6 +51,7 @@ type ReleaseRepository interface {
 	GetModuleReleaseByVersionAndStatus(id uint, version string, stID uint) (*models.ModuleRelease, error)
 	GetReleaseCountForModule(moduleID uint, statusID uint) (int64, error)
 	GetLastModuleRelease(id uint, stID uint) (*models.ModuleRelease, error)
+	GetLastModuleStatusIndependentRelease(id uint) (*models.ModuleRelease, error)
 
 	GetModuleReleasesByFilter(p *models.ReleaseFilterParams) ([]models.ModuleRelease, error)
 }
@@ -137,7 +138,7 @@ func (r *releaseRepository) Update(mr *models.ModuleRelease) error {
 
 func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, error) {
 	var results []models.ModuleRelease
-	err := r.db.Where("module_id = ? AND released_at IS NOT NULL", id).Order("released_at DESC").Find(&results).Error
+	err := r.db.Preload("Status").Where("module_id = ? AND released_at IS NOT NULL", id).Order("released_at DESC").Find(&results).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -154,7 +155,7 @@ func (r releaseRepository) GetModuleReleaseByVersion(id uint, version string) (*
 	if version[0] == 'v' {
 		versionWithoutV = version[1:]
 	}
-	err := r.db.Where("module_id = ? AND ( version = ? OR version = ? )", id, version, versionWithoutV).First(&result).Error
+	err := r.db.Preload("Status").Where("module_id = ? AND ( version = ? OR version = ? )", id, version, versionWithoutV).First(&result).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
@@ -183,7 +184,22 @@ func (r releaseRepository) GetModuleReleaseByVersionAndStatus(id uint, version s
 
 func (r releaseRepository) GetLastModuleRelease(id uint, stID uint) (*models.ModuleRelease, error) {
 	var result models.ModuleRelease
-	err := r.db.Where("module_id = ? AND status_id = ? AND released_at IS NOT NULL", id, stID).
+	err := r.db.Preload("Status").Where("module_id = ? AND status_id = ? AND released_at IS NOT NULL", id, stID).
+		Order("released_at DESC").
+		First(&result).Error
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+func (r releaseRepository) GetLastModuleStatusIndependentRelease(id uint) (*models.ModuleRelease, error) {
+	var result models.ModuleRelease
+	err := r.db.Preload("Status").Where("module_id = ? AND released_at IS NOT NULL", id).
 		Order("released_at DESC").
 		First(&result).Error
 

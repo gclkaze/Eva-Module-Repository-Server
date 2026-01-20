@@ -22,7 +22,9 @@ package services
 
 import (
 	"fmt"
+	"os"
 	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
@@ -120,6 +122,10 @@ func (s ReleaseService) GetLastModuleRelease(id uint) (*models.ModuleRelease, er
 		return nil, err
 	}
 	return s.repo.GetLastModuleRelease(id, st.ID)
+}
+
+func (s ReleaseService) GetLastModuleStatusIndependentRelease(id uint) (*models.ModuleRelease, error) {
+	return s.repo.GetLastModuleStatusIndependentRelease(id)
 }
 
 func (s *ReleaseService) removeModuleReleaseFolder(modID uint, releaseID uint) (bool, error) {
@@ -430,6 +436,25 @@ func (s *ReleaseService) createReleaseFolder(rel *models.ModuleRelease) error {
 	return nil
 }
 
+func (s *ReleaseService) CreateTemporaryTarBall( /*dest string,*/ modPath string) (string, error) {
+
+	tmpDir, err := os.MkdirTemp("", "emm-download-*")
+	if err != nil {
+		s.logger.Errorf("release service", "couldn't create temporary directory")
+		return "", err
+	}
+
+	tmpFile := filepath.Join(tmpDir, s.defaultDistFilename)
+	err = utils.CreateTarGz(modPath, tmpFile)
+	if err != nil {
+		s.logger.Errorf("release service", "couldnt create tar ball of the module directory and copy to the release directory %s", tmpDir)
+		return "", err
+	}
+
+	s.logger.Printf("release service", "created temporary dist folder %s\n", tmpDir)
+	return tmpDir, nil
+}
+
 func (s *ReleaseService) cleanReleaseFolder(rel *models.ModuleRelease) error {
 	mod, err := s.moduleService.GetModule(rel.ModuleID)
 	if err != nil {
@@ -500,6 +525,72 @@ func (s *ReleaseService) FindModuleRelease(moduleName string, version string) (*
 		return nil, fmt.Errorf("couldn't find the module release %s@%s", moduleName, version)
 	}
 	return dto.NewReleaseDTO(*theRelease), nil
+}
+
+func (s *ReleaseService) GetTheModuleRelease(moduleName string, version string) (*models.ModuleRelease, error) {
+	m, err := s.moduleService.repo.FindByNameOrReprNameOrRepoName(moduleName)
+	if err != nil {
+		return nil, err
+	}
+
+	if m == nil {
+		return nil, fmt.Errorf("couldn't find module %s@%s", moduleName, version)
+	}
+
+	if version == "latest" {
+		var theRelease *models.ModuleRelease
+		theRelease, err = s.GetLastModuleRelease(m.ID)
+		if err != nil {
+			return nil, err
+		}
+		if theRelease == nil {
+			return nil, fmt.Errorf("no release found with version %s@%s", moduleName, version)
+		}
+		return theRelease, nil
+	}
+
+	theRelease, err := s.repo.GetModuleReleaseByVersion(m.ID, version)
+	if err != nil {
+		return nil, err
+	}
+
+	if theRelease == nil {
+		return nil, fmt.Errorf("couldn't find the module release %s@%s", moduleName, version)
+	}
+	return theRelease, nil
+}
+
+func (s *ReleaseService) GetTheStatusIndependentModuleRelease(moduleName string, version string) (*models.ModuleRelease, error) {
+	m, err := s.moduleService.repo.FindByNameOrReprNameOrRepoName(moduleName)
+	if err != nil {
+		return nil, err
+	}
+
+	if m == nil {
+		return nil, fmt.Errorf("couldn't find module %s@%s", moduleName, version)
+	}
+
+	if version == "latest" {
+		var theRelease *models.ModuleRelease
+		theRelease, err = s.GetLastModuleStatusIndependentRelease(m.ID)
+		if err != nil {
+			return nil, err
+		}
+		if theRelease == nil {
+			return nil, fmt.Errorf("no release found with version %s@%s", moduleName, version)
+		}
+		return theRelease, nil
+	}
+
+	theRelease, err := s.repo.GetModuleReleaseByVersion(m.ID, version)
+	if err != nil {
+		return nil, err
+	}
+
+	if theRelease == nil {
+		return nil, fmt.Errorf("couldn't find the module release %s@%s", moduleName, version)
+	}
+	return theRelease, nil
 }
 
 func (s *ReleaseService) CancelModuleRelease(userID uint, releaseID uint) (uint, error) {

@@ -167,7 +167,9 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 
 	download := router.api.Group(DownloadGroup)
 	{
-		download.GET("/release/:releaseId", router.downloadHandler.DownloadRelease) //the release needs to be accepted
+		//download.GET("/release/:releaseId", router.downloadHandler.DownloadRelease)
+		download.GET("/release/:release", router.downloadHandler.DownloadPublicRelease)
+		download.GET("/auth/release/:release", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.downloadHandler.AuthUserDownloadSpecificRelease)
 	}
 
 	supervision := router.api.Group(SuperviseGroup)

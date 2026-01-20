@@ -124,3 +124,114 @@ func (h DownloadService) IncreaseDownloadCounter(release *models.ModuleRelease) 
 
 	return err
 }
+
+func (h *DownloadService) DownloadPublicRelease(release string) (string, string, error) {
+	//the release needs to be ACCEPTED
+	filename := h.defaultDistFilename
+	//here we smash the release string
+	moduleName, releaseVersion, err := utils.ParseModuleReleaseVersion(release)
+	if err != nil {
+		return "", "", err
+	}
+	rel, err := h.service.GetReleaseService().GetTheModuleRelease(moduleName, releaseVersion)
+	if err != nil {
+		return "", "", fmt.Errorf("couldn't find Module Release %s", release)
+	}
+
+	if rel.Status.Label != repositories.Accepted.String() {
+		return "", "", fmt.Errorf("no ACCEPTED release found with name %s", release)
+	}
+
+	mod, err := h.service.GetModule(rel.ModuleID)
+	if err != nil {
+		return "", "", fmt.Errorf("couldn't find Release Module related to release %s %d", release)
+	}
+
+	dest := h.service.GetModuleReleasePath(mod, rel)
+	if !utils.FolderExists(dest) {
+		return "", "", fmt.Errorf("couldn't find Release Artifact related to release %s", release)
+	}
+
+	dest = path.Join(dest, filename)
+	if !utils.FileExists(dest) {
+		return "", "", fmt.Errorf("couldn't find Release Artifact related to release %s", release)
+	}
+	err = h.IncreaseDownloadCounter(rel)
+	if err != nil {
+		h.service.logger.Errorf("download service", "couldn't increase the download counter for release %s, got error %s", release, err.Error())
+	}
+
+	return dest, filename, nil
+}
+
+func (h *DownloadService) AuthUserDownloadSpecificRelease(userID uint, release string) (bool, string, string, error) {
+	perms, err := h.service.GetReleaseService().GetUserService().GetUserPermissions(userID)
+	if err != nil {
+		return false, "", "", fmt.Errorf("unknown user asking for %s", release)
+	}
+	userCanGetAnyRelease := false
+	for i := range perms {
+		if perms[i].Value == models.ChangeReleaseStatuses.String() {
+			userCanGetAnyRelease = true
+			break
+		}
+	}
+
+	//the release needs to be ACCEPTED
+	filename := h.defaultDistFilename
+	//here we smash the release string
+	moduleName, releaseVersion, err := utils.ParseModuleReleaseVersion(release)
+	if err != nil {
+		return false, "", "", err
+	}
+	rel, err := h.service.GetReleaseService().GetTheStatusIndependentModuleRelease(moduleName, releaseVersion)
+	if err != nil {
+		return false, "", "", fmt.Errorf("couldn't find Module Release %s", release)
+	}
+
+	if !userCanGetAnyRelease {
+		if rel.Status.Label != repositories.Accepted.String() {
+			return false, "", "", fmt.Errorf("no ACCEPTED release found with name %s", release)
+		}
+	}
+
+	mod, err := h.service.GetModule(rel.ModuleID)
+	if err != nil {
+		return false, "", "", fmt.Errorf("couldn't find Release Module related to release %s", release)
+	}
+
+	return h.RetrieveTarball(mod, rel, filename, release)
+}
+
+func (h DownloadService) RetrieveTarball(mod *models.Module, rel *models.ModuleRelease, filename string, release string) (bool, string, string, error) {
+	if rel.Status.Label == repositories.Pending.String() {
+		//need to check on the user's module to find it, not under releases
+		dmo, err := h.service.GetModuleOwnershipService().FindDeveloperModuleOwner(&mod.Owner)
+		if err != nil {
+			return false, "", "", err
+		}
+
+		modPath := h.service.GetModulePath(dmo, mod)
+		theDest, err := h.service.GetReleaseService().CreateTemporaryTarBall(modPath)
+		if err != nil {
+			return false, "", "", fmt.Errorf("couldn't create temporary Release Artifact related to release %s", release)
+		}
+		return true, theDest, filename, nil
+	}
+
+	dest := h.service.GetModuleReleasePath(mod, rel)
+	if !utils.FolderExists(dest) {
+		return false, "", "", fmt.Errorf("couldn't find Release Artifact related to release %s", release)
+	}
+
+	dest = path.Join(dest, filename)
+	if !utils.FileExists(dest) {
+		return false, "", "", fmt.Errorf("couldn't find Release Artifact related to release %s", release)
+	}
+	err := h.IncreaseDownloadCounter(rel)
+	if err != nil {
+		h.service.logger.Errorf("download service", "couldn't increase the download counter for release %s, got error %s", release, err.Error())
+	}
+
+	return false, dest, filename, nil
+}

@@ -22,6 +22,9 @@ package handlers
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/services"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
@@ -67,6 +70,54 @@ func (h DownloadHandler) DownloadAnyRelease(c *gin.Context) {
 	}
 
 	dest, filename, err := h.service.DownloadAnyRelease(releaseIDUint)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, err.Error()))
+		return
+	}
+
+	c.Header("Content-Disposition", "attachment; filename="+filename)
+	c.Header("Content-Type", "application/octet-stream")
+	c.File(dest)
+}
+
+func (h *DownloadHandler) AuthUserDownloadSpecificRelease(c *gin.Context) {
+	release := c.Param("release")
+	userID := c.GetUint("userId")
+
+	isItTmp, dest, filename, err := h.service.AuthUserDownloadSpecificRelease(userID, release)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, err.Error()))
+		return
+	}
+
+	c.Header("Content-Disposition", "attachment; filename="+filename)
+	c.Header("Content-Type", "application/octet-stream")
+
+	if isItTmp {
+		c.File(filepath.Join(dest, filename))
+		// Run cleanup after response is completed
+		c.Writer.Flush()
+		if notifier, ok := c.Writer.(http.CloseNotifier); ok {
+			// CloseNotifier is deprecated but still works in many setups;
+			// better approach below without it.
+			_ = notifier
+		}
+		go func(dir string) {
+			// Best-effort delay to avoid removing while still streaming
+			// (better: move tmp cleanup into service with deferred close)
+			time.Sleep(2 * time.Second)
+			_ = os.RemoveAll(dir)
+		}(dest)
+	} else {
+		c.File(dest)
+	}
+
+}
+
+func (h *DownloadHandler) DownloadPublicRelease(c *gin.Context) {
+	release := c.Param("release")
+	//no token attached, thus the release needs to be on ACCEPT STATUS
+	dest, filename, err := h.service.DownloadPublicRelease(release)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.Err(err, err.Error()))
 		return

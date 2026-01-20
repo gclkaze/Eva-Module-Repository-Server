@@ -57,6 +57,10 @@ func (s *ModuleService) GetReleaseService() *ReleaseService {
 	return s.releaseService
 }
 
+func (s *ModuleService) GetModuleOwnershipService() *ModuleOwnershipService {
+	return s.ownershipService
+}
+
 func NewModuleService(repo repositories.ModuleRepository, dev *UserService, p *properties.Properties, ownershipService *ModuleOwnershipService, keywordRepo repositories.KeywordRepository, releaseService *ReleaseService) (*ModuleService, error) {
 	moduleFolder := p.GetString("module_folder", "")
 	releaseFolder := p.GetString("release_folder", "")
