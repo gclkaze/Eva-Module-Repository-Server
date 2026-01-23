@@ -145,6 +145,8 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 
 	releases := router.api.Group(ReleasesGroup)
 	{
+		releases.GET("/latest/:module", router.releaseHandler.GetModuleLatestRelease)
+		//	releases.GET("/auth/:module/latest", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.releaseHandler.GetModuleLatestReleaseOnAuth)
 		releases.GET("/:id", router.releaseHandler.GetModuleReleases)                               // GET /api/releases/:id
 		releases.GET("/:id/"+ReleaseEndpoint+"/:releaseId", router.releaseHandler.GetModuleRelease) // GET /api/releases/:id/release/:releaseId
 		releases.GET("/:id"+ReleaseSearchEndpoint, router.releaseHandler.SearchByKeywords)

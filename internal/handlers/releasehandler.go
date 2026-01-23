@@ -27,6 +27,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/services"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
@@ -307,6 +308,62 @@ func (h *ReleaseHandler) GetModuleReleases(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, utils.OkWithMessage(module, "Module Releases information retrieved successfully"))
+}
+
+func (h *ReleaseHandler) GetModuleLatestReleaseOnAuth(c *gin.Context) {
+	name := c.Param("module")
+
+	module, err := h.service.FindModule(name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, fmt.Sprintf("Couldn't find Module '%s'", name)))
+		return
+	}
+
+	if module == nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrWithSimpleMessage(fmt.Sprintf("Couldn't find Module '%s'", name)))
+		return
+	}
+
+	theRelease, err := h.service.GetLastModuleStatusIndependentRelease(module.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, fmt.Sprintf("Couldn't find Latest Release of Module: '%s'", name)))
+		return
+	}
+
+	if theRelease == nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrWithSimpleMessage(fmt.Sprintf("Couldn't find Latest Module Release of Module:  '%s'", name)))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.OkWithMessage(dto.NewReleaseDTO(*theRelease), "Latest Module Releases information retrieved successfully"))
+}
+
+func (h *ReleaseHandler) GetModuleLatestRelease(c *gin.Context) {
+	name := c.Param("module")
+
+	module, err := h.service.FindModule(name)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, fmt.Sprintf("Couldn't find Module '%s'", name)))
+		return
+	}
+
+	if module == nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrWithSimpleMessage(fmt.Sprintf("Couldn't find Module '%s'", name)))
+		return
+	}
+
+	theRelease, err := h.service.GetLastModuleRelease(module.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, fmt.Sprintf("Couldn't find Latest Release of Module: '%s'", name)))
+		return
+	}
+
+	if theRelease == nil {
+		c.JSON(http.StatusInternalServerError, utils.ErrWithSimpleMessage(fmt.Sprintf("Couldn't find Latest Module Release of Module:  '%s'", name)))
+		return
+	}
+
+	c.JSON(http.StatusOK, utils.OkWithMessage(dto.NewReleaseDTO(*theRelease), "Latest Module Releases information retrieved successfully"))
 }
 
 func (h *ReleaseHandler) SearchByKeywords(c *gin.Context) {

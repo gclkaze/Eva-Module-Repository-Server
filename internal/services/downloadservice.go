@@ -110,6 +110,9 @@ func (h DownloadService) DownloadAnyRelease(releaseID uint) (string, string, err
 
 func (h DownloadService) IncreaseDownloadCounter(release *models.ModuleRelease) error {
 
+	if release.Statistics == nil {
+		return nil
+	}
 	db := h.service.repo.GetDB()
 	err := utils.WithGormTransaction(db, func(tx *gorm.DB) error {
 

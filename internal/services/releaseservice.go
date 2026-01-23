@@ -60,6 +60,10 @@ func (s *ReleaseService) GetUserService() *UserService {
 	return s.userService
 }
 
+func (s *ReleaseService) FindModule(name string) (*models.Module, error) {
+	return s.moduleService.repo.FindByNameOrReprNameOrRepoName(name)
+}
+
 func (s ReleaseService) GetReleaseAcceptedCountForModule(moduleID uint) (int64, error) {
 	st, err := s.statusRepo.GetStatus(repositories.Accepted)
 	if err != nil {
