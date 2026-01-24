@@ -72,6 +72,14 @@ func RemoveFolder(dir string) error {
 	return os.Remove(dir)
 }
 
+func CleanAndRemoveFolder(dir string) error {
+	err := CleanFolder(dir)
+	if err != nil {
+		return err
+	}
+	return RemoveFolder(dir)
+}
+
 func ComputeFolderSizeBytes(root string) (int64, error) {
 	var total int64
 
