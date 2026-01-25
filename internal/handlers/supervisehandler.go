@@ -23,7 +23,9 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
+	"github.com/gclkaze/evamodulerepositoryserver/internal/dto"
 	"github.com/gclkaze/evamodulerepositoryserver/internal/services"
 	"github.com/gclkaze/evamodulerepositoryserver/pkg/utils"
 	"github.com/gin-gonic/gin"
@@ -35,6 +37,46 @@ type SuperviseHandler struct {
 
 func NewSuperviseHandler(service *services.UserService) *SuperviseHandler {
 	return &SuperviseHandler{service: service}
+}
+
+func (u *SuperviseHandler) GetUser(c *gin.Context) {
+	email := c.Param("email")
+
+	email = strings.TrimSpace(email)
+	if email == "" {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("Empty User Email Provided"))
+		return
+	}
+	if !utils.IsValidEmail(email) {
+		c.JSON(http.StatusBadRequest, utils.ErrWithSimpleMessage("Invalid User Email Provided"))
+		return
+	}
+	acc, err := u.service.FindByEmail(email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "couldn't find user account by email"))
+		return
+	}
+
+	if acc == nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, fmt.Sprintf("couldn't find user account by email %s", email)))
+		return
+	}
+	c.JSON(http.StatusOK, utils.OkWithMessage(dto.NewSimpleUserAccountDTO(acc), "User was found successfully"))
+}
+
+func (u *SuperviseHandler) GetUsers(c *gin.Context) {
+	devs, err := u.service.GetDeveloperRepository().Get()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "couldn't find users"))
+		return
+	}
+
+	var devsDTO []dto.DeveloperDTO
+	for i := range devs {
+		devsDTO = append(devsDTO, *dto.NewDeveloperDTO(&devs[i]))
+	}
+
+	c.JSON(http.StatusOK, utils.OkWithMessage(devsDTO, "User retrieved"))
 }
 
 func (u *SuperviseHandler) BanUser(c *gin.Context) {

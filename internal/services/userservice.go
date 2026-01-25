@@ -238,8 +238,8 @@ func (s *UserService) initializeDefaultUsers() error {
 	var users []*dto.UserAccountDTO
 
 	defaultPassword := s.p.GetString("default_password", "thisisapass")
-	users = append(users, dto.NewUserAccountDTO("gclkaze", "gcl", "kaze", "gclkaze@gmail.com", defaultPassword, true, models.Admin.String()))
-	users = append(users, dto.NewUserAccountDTO("mdor", "michail", "dorgiakis", "michail.dorgiakis@gmail.com", defaultPassword, true, models.User.String()))
+	users = append(users, dto.NewUserAccountDTO(1, "gclkaze", "gcl", "kaze", "gclkaze@gmail.com", defaultPassword, true, models.Admin.String()))
+	users = append(users, dto.NewUserAccountDTO(2, "mdor", "michail", "dorgiakis", "michail.dorgiakis@gmail.com", defaultPassword, true, models.User.String()))
 
 	for i := range users {
 		email := users[i].Email
@@ -297,6 +297,9 @@ func (s *UserService) BanUser(userID uint) error {
 	if dev == nil {
 		return fmt.Errorf("unknown user with id %d", userID)
 	}
+	if dev.IsBanned {
+		return fmt.Errorf("user with id %d is already banned", userID)
+	}
 	return s.accountRepo.BanUser(userID)
 }
 
@@ -307,6 +310,9 @@ func (s *UserService) UnbanUser(userID uint) error {
 	}
 	if dev == nil {
 		return fmt.Errorf("unknown user with id %d", userID)
+	}
+	if !dev.IsBanned {
+		return fmt.Errorf("user with id %d is not banned", userID)
 	}
 	return s.accountRepo.UnbanUser(userID)
 }

@@ -214,6 +214,16 @@ func (router *EvaModuleRepositoryRouter) Initialize(r *gin.Engine, be *backend.E
 			models.UnbanUsers,
 		})), router.superviseHandler.UnbanUser)
 
+		supervision.GET(SuperviseGetEndpoint+"/:email", router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+			models.BanUsers,
+			models.UnbanUsers,
+		})), router.superviseHandler.GetUser)
+
+		supervision.GET(SuperviseGetUsersEndpoint, router.middleWare.AuthMiddleware(be.GetJWTSecret()), router.middleWare.PreAuthorize(router.middleWare.HasPermissions([]models.UserPermissionTypeDef{
+			models.BanUsers,
+			models.UnbanUsers,
+		})), router.superviseHandler.GetUsers)
+
 	}
 
 	if config.TheConfigReader.IsOnError() {

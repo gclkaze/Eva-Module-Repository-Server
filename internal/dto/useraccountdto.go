@@ -21,6 +21,7 @@
 package dto
 
 type UserAccountDTO struct {
+	ID        uint   `json:"id"`
 	Handle    string `json:"handle"`
 	Email     string `json:"email"`
 	Password  string `json:"password"`
@@ -31,6 +32,6 @@ type UserAccountDTO struct {
 }
 
 // //handle string, firstName string, lastName string, email string, password string, active bool
-func NewUserAccountDTO(handle string, firstName string, lastName string, email string, password string, active bool, role string) *UserAccountDTO {
+func NewUserAccountDTO(id uint, handle string, firstName string, lastName string, email string, password string, active bool, role string) *UserAccountDTO {
 	return &UserAccountDTO{Handle: handle, Email: email, Password: password, UserRole: role, Active: active, FirstName: firstName, LastName: lastName}
 }

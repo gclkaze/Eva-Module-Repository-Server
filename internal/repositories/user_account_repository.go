@@ -100,7 +100,7 @@ func (d *userAccountRepository) GetByID(id uint) (*models.UserAccount, error) {
 
 func (d *userAccountRepository) FindByEmail(email string) (*models.UserAccount, error) {
 	var dev models.UserAccount
-	err := d.db.Where("email = ?", email).First(&dev).Error
+	err := d.db.Preload("UserRole").Where("email = ?", email).First(&dev).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
