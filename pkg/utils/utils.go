@@ -72,7 +72,7 @@ func IsValidVersion(v string) bool {
 	if v[0] == 'v' {
 		return semver.IsValid(v)
 	}
-	return semver.IsValid(v)
+	return semver.IsValid("v" + v)
 }
 
 func GetRepoName(input string) string {

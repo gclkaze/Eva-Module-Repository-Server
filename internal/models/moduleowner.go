@@ -24,10 +24,16 @@ package models
 import "gorm.io/gorm"
 
 type ModuleOwner struct {
+	//	gorm.Model
+	//	TypeID   uint            `json:"type_id"`
+	//	Type     ModuleOwnerType `gorm:"foreignKey:TypeID"`
+	//	EntityID uint            `json:"entity_id"`
+
 	gorm.Model
-	TypeID   uint            `json:"type_id"`
-	Type     ModuleOwnerType `gorm:"foreignKey:TypeID"`
-	EntityID uint            `json:"entity_id"`
+	TypeID   uint `gorm:"uniqueIndex:idx_type_entity"`
+	EntityID uint `gorm:"uniqueIndex:idx_type_entity"`
+
+	Type ModuleOwnerType `gorm:"foreignKey:TypeID"`
 }
 
 func NewModuleOwner(t ModuleOwnerType, id uint) *ModuleOwner {

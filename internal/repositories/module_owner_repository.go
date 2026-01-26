@@ -52,7 +52,7 @@ func (m *moduleOwnerRepository) Create(t *models.ModuleOwnerType, entityID uint)
 
 func (m *moduleOwnerRepository) Find(t *models.ModuleOwnerType, entityID uint) (*models.ModuleOwner, error) {
 	var res models.ModuleOwner
-	err := m.db.Where("type_id = ? AND entity_id = ?", t.ID, entityID).
+	err := m.db.Preload("Type").Where("type_id = ? AND entity_id = ?", t.ID, entityID).
 		First(&res).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil

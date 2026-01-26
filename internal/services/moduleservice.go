@@ -280,14 +280,25 @@ func (s *ModuleService) CreateModuleTx(
 			return err
 		}
 
-		owner, err = s.ownershipService.CreateModuleOwnerTx(tx, models.Dev, dev.ID)
+		owner, err = s.ownershipService.GetModuleOwner(models.Dev, dev.ID)
 		if err != nil {
 			return err
 		}
+		if owner == nil {
+			owner, err = s.ownershipService.CreateModuleOwnerTx(tx, models.Dev, dev.ID)
+			if err != nil {
+				return err
+			}
 
-		dmo, err = s.ownershipService.CreateDeveloperModuleOwnerTx(tx, dev, owner)
-		if err != nil {
-			return err
+			dmo, err = s.ownershipService.CreateDeveloperModuleOwnerTx(tx, dev, owner)
+			if err != nil {
+				return err
+			}
+		} else {
+			dmo, err = s.ownershipService.FindDeveloperModuleOwner(owner)
+			if err != nil {
+				return err
+			}
 		}
 
 		labels := strings.Split(tags, ",")

@@ -466,5 +466,10 @@ func (r *releaseRepository) GetModuleReleasesByFilter(p *models.ReleaseFilterPar
 	}
 
 	err := q.Order("module_releases.created_at DESC").Find(&results).Error
+
+	/*	query := q.Statement.SQL.String()
+		fmt.Print(query)
+		fmt.Println(q.Statement.Vars)*/
+
 	return results, err
 }
