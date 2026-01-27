@@ -48,6 +48,7 @@ func NewUserService(repo repositories.DeveloperRepository, accountRepo repositor
 	l := runtime.CreateLogger(p)
 	mod := &UserService{repo: repo, accountRepo: accountRepo, permissionRepo: permissionRepo, roleRepo: roleRepo, p: p}
 	mod.logger = l
+	mod.p = p
 	return mod
 }
 
