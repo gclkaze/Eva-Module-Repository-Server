@@ -254,6 +254,10 @@ func (s *ModuleService) CreateModuleTx(
 		err := fmt.Errorf("the module handle %s should not contain strange characters and its length should be between 3 and 50 characters long", repr)
 		return 0, err
 	}
+
+	if err := utils.IsValidDescription(descr); err != nil {
+		return 0, err
+	}
 	reprExists, errFileExists := s.ReprExists(repr)
 	if errFileExists != nil {
 		return 0, errFileExists
@@ -367,6 +371,10 @@ func (s *ModuleService) UpdateUserModule(userID uint, modID uint, title string, 
 	}
 	if reprExists {
 		err = fmt.Errorf("the module handle %s is already taken..use a different one", repr)
+		return 0, err
+	}
+
+	if err = utils.IsValidDescription(descr); err != nil {
 		return 0, err
 	}
 

@@ -268,7 +268,7 @@ func (s UserService) FindByEmail(email string) (*models.UserAccount, error) {
 func (s *UserService) InitializeUserRolePermissions() error {
 	for _, t := range models.GetUserRoleTypes() {
 		//var res models.UserRole
-		perms := s.getRolePermissions(t)
+		perms := s.GetRolePermissions(t)
 		var storedPerms []models.UserPermission
 		for i := range perms {
 			p, err := s.permissionRepo.FindByValue(perms[i].Value)
@@ -317,7 +317,29 @@ func (s *UserService) UnbanUser(userID uint) error {
 	return s.accountRepo.UnbanUser(userID)
 }
 
-func (s UserService) getRolePermissions(t models.UserRoleTypeDef) []models.UserPermission {
+func (s UserService) PermissionsArrayToStringArray(perms []models.UserPermission) []string {
+	var p []string
+	if len(perms) == 0 {
+		return p
+	}
+
+	for i := range perms {
+		p = append(p, perms[i].Value)
+	}
+	return p
+}
+
+func (s UserService) GetUserRolePermissions(u *models.UserAccount) []string {
+	name := u.UserRole.Name
+	for _, t := range models.GetUserRoleTypes() {
+		if t.String() == name {
+			return s.PermissionsArrayToStringArray(s.GetRolePermissions(t))
+		}
+	}
+	return nil
+}
+
+func (s UserService) GetRolePermissions(t models.UserRoleTypeDef) []models.UserPermission {
 	m := map[models.UserRoleTypeDef][]models.UserPermission{
 		models.Admin: {
 			{Value: models.CreateMyModule.String()},

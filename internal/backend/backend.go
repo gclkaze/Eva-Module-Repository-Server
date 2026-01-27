@@ -92,7 +92,7 @@ func (be *EvaModuleRepositoryBackend) initializeServices() error {
 	err = be.userService.Initialize()
 
 	be.downloadService = services.NewDownloadService(be.moduleService, be.properties)
-	be.authService = services.NewAuthService(be.db.GetUserAccountRepository(), be.db.GetDevAccountRepository(), be.properties)
+	be.authService = services.NewAuthService(be.db.GetUserAccountRepository(), be.db.GetDevAccountRepository(), be.userService, be.properties)
 	return err
 }
 

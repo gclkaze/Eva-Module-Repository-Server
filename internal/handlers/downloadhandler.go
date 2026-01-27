@@ -83,7 +83,11 @@ func (h DownloadHandler) DownloadAnyRelease(c *gin.Context) {
 func (h *DownloadHandler) AuthUserDownloadSpecificRelease(c *gin.Context) {
 	release := c.Param("release")
 	userID := c.GetUint("userId")
-
+	res, err := utils.IsValidModuleOrModuleVersion(release)
+	if !res {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, err.Error()))
+		return
+	}
 	isItTmp, dest, filename, err := h.service.AuthUserDownloadSpecificRelease(userID, release)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.Err(err, err.Error()))
@@ -116,6 +120,11 @@ func (h *DownloadHandler) AuthUserDownloadSpecificRelease(c *gin.Context) {
 
 func (h *DownloadHandler) DownloadPublicRelease(c *gin.Context) {
 	release := c.Param("release")
+	res, err := utils.IsValidModuleOrModuleVersion(release)
+	if !res {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, err.Error()))
+		return
+	}
 	//no token attached, thus the release needs to be on ACCEPT STATUS
 	dest, filename, err := h.service.DownloadPublicRelease(release)
 	if err != nil {

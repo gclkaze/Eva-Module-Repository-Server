@@ -168,6 +168,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	err := utils.IsValidPassword(pwd)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, utils.Err(err, "Invalid password provided"))
+		return
+	}
+
 	user, err := h.service.Authenticate(email, pwd)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, utils.Err(err, "Invalid credentials"))

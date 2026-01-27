@@ -58,6 +58,12 @@ func (h *ModuleHandler) FindByID(c *gin.Context) {
 func (h *ModuleHandler) GetModuleInfo(c *gin.Context) {
 	name := c.Query("moduleName")
 
+	res, err := utils.IsValidModuleOrModuleVersion(name)
+	if !res {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Invalid module or module release name"))
+		return
+	}
+
 	module, release, err := utils.ParseModuleReleaseVersion(name)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't identify the release"))
@@ -224,11 +230,21 @@ func (h *ModuleHandler) SearchModulesByTags(c *gin.Context) {
 
 func (h *ModuleHandler) SearchModulesByComponents(c *gin.Context) {
 	tagTokens := c.QueryArray("tags")
-
-	//tagTokens := strings.Split(tagsQuery, ",")
-
 	nameTokens := c.QueryArray("name")
 	descrTokens := c.QueryArray("description")
+
+	if err := utils.ValidateTags(tagTokens); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "invalid tag list provided"))
+		return
+	}
+	if err := utils.ValidateNames(nameTokens); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "invalid name list provided"))
+		return
+	}
+	if err := utils.ValidateDescriptions(descrTokens); err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "invalid description list provided"))
+		return
+	}
 
 	modules, err := h.service.SearchByComponents(nameTokens, descrTokens, tagTokens)
 	if err != nil {

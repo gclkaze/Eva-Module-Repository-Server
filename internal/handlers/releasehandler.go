@@ -63,6 +63,11 @@ func (h *ReleaseHandler) RejectRelease(c *gin.Context) {
 func (h *ReleaseHandler) FindRelease(c *gin.Context) {
 	//userID := c.GetUint("userId")
 	moduleName := c.Param("module")
+	err := utils.IsValidModuleNameWithError(moduleName)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, utils.Err(err, "Invalid module name"))
+		return
+	}
 
 	version := c.Param("version")
 	if !utils.IsValidVersion(version) {

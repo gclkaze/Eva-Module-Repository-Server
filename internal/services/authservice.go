@@ -43,10 +43,12 @@ type AuthService struct {
 
 	usersRepo repositories.UserAccountRepository
 	devRepo   repositories.DeveloperRepository
+
+	userService *UserService
 }
 
 func NewAuthService(usersRepo repositories.UserAccountRepository,
-	devRepo repositories.DeveloperRepository, p *properties.Properties) *AuthService {
+	devRepo repositories.DeveloperRepository, userService *UserService, p *properties.Properties) *AuthService {
 	auth := &AuthService{p: p}
 	auth.jwtSecret = p.GetString("jwt_secret", "")
 	auth.logger = runtime.CreateLogger(p)
@@ -54,6 +56,7 @@ func NewAuthService(usersRepo repositories.UserAccountRepository,
 	auth.refreshTokenTTL = p.GetDuration("refresh_token_ttl", 7*24) * time.Hour
 	auth.usersRepo = usersRepo
 	auth.devRepo = devRepo
+	auth.userService = userService
 	return auth
 }
 
@@ -68,6 +71,7 @@ func (s *AuthService) GenerateTokens(user *models.UserAccount) (string, string, 
 		"sub":   user.ID,
 		"email": user.Email,
 		"exp":   time.Now().Add(s.accessTokenTTL).Unix(),
+		"perms": s.userService.GetUserRolePermissions(user),
 	}
 
 	access := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)

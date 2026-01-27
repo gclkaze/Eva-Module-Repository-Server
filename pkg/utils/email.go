@@ -27,8 +27,16 @@ import (
 )
 
 var domainRegex = regexp.MustCompile(`^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+var MinEmailValidLength = 10
+var MaxEmailValidLength = 64
 
 func IsValidEmail(email string) bool {
+	if len(email) < MinEmailValidLength {
+		return false
+	}
+	if len(email) > MaxEmailValidLength {
+		return false
+	}
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
 		return false
