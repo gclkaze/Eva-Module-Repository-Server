@@ -24,3 +24,12 @@ func NewModuleEnrichedDTO(module *models.Module, moduleReleases []models.ModuleR
 	}
 	return &ModuleEnrichedDTO{ID: module.ID, Title: module.Title, Repr: module.Repr, Description: module.Description, Tags: tags, RepoName: module.RepoName, ReleaseInfo: releaseInfo}
 }
+
+func NewModuleEnrichedDTOWithReleaseDTO(module *models.Module, moduleReleases []ReleaseDTO) *ModuleEnrichedDTO {
+	var tags []string
+	for i := range module.Keywords {
+		tags = append(tags, module.Keywords[i].Label)
+	}
+
+	return &ModuleEnrichedDTO{ID: module.ID, Title: module.Title, Repr: module.Repr, Description: module.Description, Tags: tags, RepoName: module.RepoName, ReleaseInfo: moduleReleases}
+}

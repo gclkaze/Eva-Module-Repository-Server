@@ -751,7 +751,7 @@ func (s ModuleService) SearchByComponents(nameTokens []string, descrTokens []str
 	return dtos, err
 }
 
-func (s ModuleService) GetUserModules(userID uint) ([]dto.ModuleDTO, error) {
+func (s ModuleService) GetUserModules(userID uint) ([]dto.ModuleEnrichedDTO, error) {
 
 	userAccount, err := s.developerService.FindUserByID(userID)
 	if err != nil {
@@ -769,14 +769,17 @@ func (s ModuleService) GetUserModules(userID uint) ([]dto.ModuleDTO, error) {
 	if err != nil {
 		return nil, err
 	}
-	var dtos []dto.ModuleDTO
+	var dtos []dto.ModuleEnrichedDTO
 	for i := range results {
-		releaseCNT, countErr := s.releaseService.GetReleaseAcceptedCountForModule(results[i].ID)
-		if countErr != nil {
-			s.logger.Errorf("module service", "error while counting accepted releases for the modules %s", countErr.Error())
-			continue
+		theReleases, err := s.releaseService.GetAllModuleReleases(results[i].ID)
+		if err != nil {
+			return nil, err
 		}
-		dtos = append(dtos, *dto.NewModuleDTOWithReleaseInformation(results[i], releaseCNT))
+		if theReleases == nil {
+			continue //return nil, fmt.Errorf("no release found with version %s@%s", moduleName, releaseName)
+		}
+		dto := dto.NewModuleEnrichedDTOWithReleaseDTO(&results[i], theReleases)
+		dtos = append(dtos, *dto)
 	}
 	return dtos, err
 }

@@ -40,6 +40,7 @@ type ReleaseRepository interface {
 	CancelSuggestedModuleRelease(userID uint, id uint, releaseID uint) (bool, error)
 	GetModuleRelease(id uint, releaseID uint) (*models.ModuleRelease, error)
 	GetModuleReleases(id uint) ([]models.ModuleRelease, error)
+	GetAllModuleReleases(id uint) ([]models.ModuleRelease, error)
 	GetModuleReleasesIDs(id uint) ([]uint, error)
 	SearchModuleReleasesByTags(id uint, tags []string) ([]models.ModuleRelease, error)
 	GetModuleReleasesWithStatus(id uint, statusID uint) ([]models.ModuleRelease, error)
@@ -139,6 +140,18 @@ func (r *releaseRepository) Update(mr *models.ModuleRelease) error {
 func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, error) {
 	var results []models.ModuleRelease
 	err := r.db.Preload("Status").Where("module_id = ? AND released_at IS NOT NULL", id).Order("released_at DESC").Find(&results).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+func (r releaseRepository) GetAllModuleReleases(id uint) ([]models.ModuleRelease, error) {
+	var results []models.ModuleRelease
+	err := r.db.Preload("Status").Where("module_id = ?", id).Order("created_at DESC").Find(&results).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

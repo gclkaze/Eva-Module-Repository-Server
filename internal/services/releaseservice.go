@@ -322,6 +322,21 @@ func (s *ReleaseService) GetModuleReleases(id uint) ([]dto.ReleaseDTO, error) {
 	return dtos, error
 }
 
+func (s *ReleaseService) GetAllModuleReleases(id uint) ([]dto.ReleaseDTO, error) {
+	results, error := s.repo.GetAllModuleReleases(id)
+	if error != nil {
+		return nil, error
+	}
+	if results == nil {
+		return nil, nil
+	}
+	var dtos []dto.ReleaseDTO
+	for i := 0; i < len(results); i++ {
+		dtos = append(dtos, *dto.NewReleaseDTO(results[i]))
+	}
+	return dtos, error
+}
+
 func (s *ReleaseService) GetModuleReleaseIds(id uint) ([]uint, error) {
 	results, error := s.repo.GetModuleReleasesIDs(id)
 	if error != nil {

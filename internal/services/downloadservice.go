@@ -192,7 +192,7 @@ func (h *DownloadService) AuthUserDownloadSpecificRelease(userID uint, release s
 		return false, "", "", fmt.Errorf("couldn't find Module Release %s", release)
 	}
 
-	if !userCanGetAnyRelease {
+	if !userCanGetAnyRelease && rel.CreatorID != userID {
 		if rel.Status.Label != repositories.Accepted.String() {
 			return false, "", "", fmt.Errorf("no ACCEPTED release found with name %s", release)
 		}
