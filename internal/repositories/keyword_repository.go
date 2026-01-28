@@ -22,6 +22,7 @@ package repositories
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/gclkaze/evamodulerepositoryserver/internal/models"
 	"gorm.io/gorm"
@@ -35,6 +36,9 @@ type KeywordRepository interface {
 	FindByLabelTx(tx *gorm.DB, label string) (*models.Keyword, error)
 	FindAll() ([]models.Keyword, error)
 	Delete(id int64) error
+
+	//utility functions
+	MergeKeywords(first []models.Keyword, second []models.Keyword) []models.Keyword
 }
 
 type keywordRepository struct {
@@ -93,4 +97,33 @@ func (r *keywordRepository) FindAll() ([]models.Keyword, error) {
 // Delete by ID
 func (r *keywordRepository) Delete(id int64) error {
 	return r.db.Delete(&models.Keyword{}, id).Error
+}
+
+func (r keywordRepository) MergeKeywords(first []models.Keyword, second []models.Keyword) []models.Keyword {
+	seen := make(map[string]struct{}, len(first)+len(second))
+	out := make([]models.Keyword, 0, len(first)+len(second))
+
+	add := func(list []models.Keyword) {
+		for _, k := range list {
+			label := strings.ToLower(strings.TrimSpace(k.Label))
+			if label == "" {
+				continue // ignore empty labels defensively
+			}
+
+			if _, ok := seen[label]; ok {
+				continue
+			}
+
+			seen[label] = struct{}{}
+
+			// normalize label (optional but recommended)
+			k.Label = label
+			out = append(out, k)
+		}
+	}
+
+	add(first)
+	add(second)
+
+	return out
 }

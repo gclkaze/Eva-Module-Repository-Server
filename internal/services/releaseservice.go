@@ -253,7 +253,7 @@ func (s ReleaseService) userHasPendingRelease(userID uint) (bool, error) {
 	return false, nil
 }
 
-func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Module, version string, sz int64) (uint, error) {
+func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Module, version string, sz int64, releaseDescription string, tags []models.Keyword) (uint, error) {
 	modID := mod.ID
 
 	res, err := s.moduleHasPendingRelease(modID)
@@ -275,7 +275,13 @@ func (s *ReleaseService) SuggestUserModuleRelease(userID uint, mod *models.Modul
 	}
 
 	dev := dmo.Developer
-	newRelease := models.NewModuleReleaseFromModule(mod, version, *st, sz, dev)
+	var newRelease *models.ModuleRelease
+	if releaseDescription == "" && len(tags) == 0 {
+		newRelease = models.NewModuleReleaseFromModule(mod, version, *st, sz, dev)
+	} else {
+		newRelease = models.NewModuleReleaseFromModuleWithParameters(mod, version, *st, sz, dev, releaseDescription, tags)
+	}
+
 	err = s.repo.Create(newRelease)
 	if err != nil {
 		return 0, err

@@ -447,7 +447,7 @@ func (s ModuleService) GetFolderSize(mod *models.Module) (int64, error) {
 	return sz, nil
 }
 
-func (s *ModuleService) SuggestUserModuleRelease(userID uint, modID uint, version string) (uint, error) {
+func (s *ModuleService) SuggestUserModuleRelease(userID uint, modID uint, version string, description string, tags string, shouldInheritTags bool) (uint, error) {
 	mod, err := s.GetModule(modID)
 	if err != nil {
 		return 0, err
@@ -476,7 +476,46 @@ func (s *ModuleService) SuggestUserModuleRelease(userID uint, modID uint, versio
 		return 0, fmt.Errorf("invalid version suggested version string %s", version)
 	}
 
-	return s.releaseService.SuggestUserModuleRelease(userID, mod, version, diskSize)
+	err = utils.IsValidDescription(description)
+	if err != nil {
+		return 0, fmt.Errorf("invalid release description %s", description)
+	}
+
+	keywords, err := s.getReleaseKeywords(tags, shouldInheritTags, mod)
+	if err != nil {
+		s.logger.Errorf("module service", "couldn't process tags for %d and module %d, version %s, got error : %s", userID, modID, version, err.Error())
+		return 0, fmt.Errorf("couldn't process release tags")
+	}
+	return s.releaseService.SuggestUserModuleRelease(userID, mod, version, diskSize, description, keywords)
+}
+
+func (s ModuleService) getReleaseKeywords(tags string, shouldInheritTags bool, mod *models.Module) ([]models.Keyword, error) {
+	var err error
+	var keywords []models.Keyword
+	tags = strings.TrimSpace(tags)
+
+	//the user issued tags
+	if tags != "" {
+		labels := strings.Split(tags, ",")
+		labels = utils.UniqueLowercaseTokens(labels)
+		err = utils.ValidateTags(labels)
+		if err != nil {
+			return nil, err
+		}
+		//we create these tags
+		keywords, err = s.CreateAndGetKeywords(labels)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if shouldInheritTags {
+		//we need to check the modules tags, see which do not exist in keywords list and add them
+		keywords = s.keyword.MergeKeywords(keywords, mod.Keywords)
+	}
+
+	return keywords, nil
+
 }
 
 func (s *ModuleService) FindByID(id uint) (*dto.ModuleDTO, error) {

@@ -151,7 +151,7 @@ func (r releaseRepository) GetModuleReleases(id uint) ([]models.ModuleRelease, e
 
 func (r releaseRepository) GetAllModuleReleases(id uint) ([]models.ModuleRelease, error) {
 	var results []models.ModuleRelease
-	err := r.db.Preload("Status").Where("module_id = ?", id).Order("created_at DESC").Find(&results).Error
+	err := r.db.Preload("Status").Preload("Keywords").Where("module_id = ?", id).Order("created_at DESC").Find(&results).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

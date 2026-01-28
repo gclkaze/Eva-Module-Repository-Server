@@ -195,6 +195,9 @@ func (h *ModuleHandler) SuggestRelease(c *gin.Context) {
 	userID := c.GetUint("userId")
 	modID := c.PostForm("modId")
 	version := c.PostForm("version")
+	releaseDescription := c.PostForm("description")
+	tags := c.PostForm("tags")
+	inheritModuleTags := c.PostForm("inherit_tags")
 
 	modIDUint, err := utils.StringToUint(modID)
 	if err != nil {
@@ -202,7 +205,12 @@ func (h *ModuleHandler) SuggestRelease(c *gin.Context) {
 		return
 	}
 
-	id, err := h.service.SuggestUserModuleRelease(userID, modIDUint, version)
+	shouldInheritTags := false
+	if inheritModuleTags == "1" {
+		shouldInheritTags = true
+	}
+
+	id, err := h.service.SuggestUserModuleRelease(userID, modIDUint, version, releaseDescription, tags, shouldInheritTags)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, utils.Err(err, "Couldn't suggest module release"))
 		return

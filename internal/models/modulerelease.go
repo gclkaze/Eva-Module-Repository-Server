@@ -44,3 +44,7 @@ type ModuleRelease struct {
 func NewModuleReleaseFromModule(m *Module, version string, status ModuleReleaseStatus, diskSize int64, creator Developer) *ModuleRelease {
 	return &ModuleRelease{ModuleID: m.ID, Version: version, Description: m.Description, StatusID: status.ID, Status: status, DiskSize: diskSize, Creator: creator, CreatorID: creator.ID}
 }
+
+func NewModuleReleaseFromModuleWithParameters(m *Module, version string, status ModuleReleaseStatus, diskSize int64, creator Developer, description string, keywords []Keyword) *ModuleRelease {
+	return &ModuleRelease{ModuleID: m.ID, Version: version, Description: description, StatusID: status.ID, Status: status, DiskSize: diskSize, Creator: creator, CreatorID: creator.ID, Keywords: keywords}
+}

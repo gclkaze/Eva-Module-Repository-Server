@@ -453,3 +453,18 @@ func ValidateDescriptions(desc []string) error {
 		textRe,
 	)
 }
+func UniqueLowercaseTokens(in []string) []string {
+	seen := make(map[string]struct{}, len(in))
+	out := make([]string, 0, len(in))
+
+	for _, s := range in {
+		v := strings.ToLower(s)
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		out = append(out, v)
+	}
+
+	return out
+}
