@@ -814,9 +814,9 @@ func (s ModuleService) GetUserModules(userID uint) ([]dto.ModuleEnrichedDTO, err
 		if err != nil {
 			return nil, err
 		}
-		if theReleases == nil {
-			continue //return nil, fmt.Errorf("no release found with version %s@%s", moduleName, releaseName)
-		}
+		/*		if theReleases == nil {
+				continue
+			}*/
 		dto := dto.NewModuleEnrichedDTOWithReleaseDTO(&results[i], theReleases)
 		dtos = append(dtos, *dto)
 	}

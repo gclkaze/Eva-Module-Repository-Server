@@ -19,6 +19,7 @@ func NewModuleEnrichedDTO(module *models.Module, moduleReleases []models.ModuleR
 	for i := range module.Keywords {
 		tags = append(tags, module.Keywords[i].Label)
 	}
+
 	for i := range moduleReleases {
 		releaseInfo = append(releaseInfo, *NewReleaseDTO(moduleReleases[i]))
 	}
